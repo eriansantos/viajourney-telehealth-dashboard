@@ -7,7 +7,8 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { useClerk } from "@clerk/clerk-react";
+import { useClerk, useAuth } from "@clerk/clerk-react";
+import { apiGet } from "./lib/api.js";
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement, LineElement,
@@ -260,34 +261,101 @@ function VOverview() {
 }
 
 function VVisits() {
+  const { getToken } = useAuth();
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    apiGet("/api/elation/visit-volume", getToken)
+      .then((res) => { if (!cancelled) { setData(res); setLoading(false); } })
+      .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false); } });
+
+    return () => { cancelled = true; };
+  }, [getToken]);
+
+  const total       = data?.total ?? "—";
+  const physicians  = data?.byPhysician ?? [];
+  const activePh    = physicians.filter((p) => p.is_active).length;
+  const perClinician = activePh > 0 ? Math.round(data.total / activePh) : "—";
+  const inPerson    = data?.byMode?.IN_PERSON ?? 0;
+  const video       = data?.byMode?.VIDEO ?? 0;
+  const modeTotal   = inPerson + video || 1;
+  const videoPct    = Math.round((video / modeTotal) * 100);
+
   return (
     <div>
       <SecHeader tag="Module 2 · Priority · Elation API" title="Visit Volume & Utilization" desc="Are you using clinician capacity efficiently?" />
+
+      {error && (
+        <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
+          Erro ao carregar dados: {error}
+        </div>
+      )}
+
       <Grid>
-        <KpiCard label="Total visits (MTD)"   value="736"  trend="↑ +14% vs last month"    accent={B.ch.g} />
-        <KpiCard label="Visits per clinician" value="92"   subunit="per clinician / month"  accent={B.ch.t} />
-        <KpiCard label="Repeat visit rate"    value="38"   unit="%" trend="Healthy engagement" accent={B.ch.a} />
-        <KpiCard label="Active states"        value="4"    subunit="FL · TX · NY · CA"      accent={B.g700} />
+        <KpiCard label="Total appointments"    value={loading ? "…" : total}        trend={loading ? "" : "Elation live"} accent={B.ch.g} />
+        <KpiCard label="Visits per clinician"  value={loading ? "…" : perClinician} subunit="por clínico ativo"           accent={B.ch.t} />
+        <KpiCard label="Telehealth (video)"    value={loading ? "…" : `${videoPct}`} unit="%"                              accent={B.ch.a} />
+        <KpiCard label="Clínicos ativos"       value={loading ? "…" : activePh}     subunit="na prática"                  accent={B.g700} />
       </Grid>
+
       <Two>
-        <Card title="Visits by type" source="Elation API">
-          <Lgnd items={[{label:"Member 58%",color:B.ch.g},{label:"Concierge 24%",color:B.ch.t},{label:"One-time 18%",color:B.ch.a}]} />
-          <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <div style={{ position:"relative", width:180, height:180 }}>
-              <Doughnut data={D.vtypes} options={coD()} />
-              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
-                <div style={{ fontSize:20, fontWeight:700, color:B.t1, fontFamily:F }}>736</div>
-                <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>total MTD</div>
+        <Card title="Appointments por modo" source="Elation API — live">
+          {loading ? (
+            <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Carregando...</div>
+          ) : (
+            <>
+              <Lgnd items={[{label:`Presencial ${inPerson}`,color:B.ch.g},{label:`Vídeo ${video}`,color:B.ch.t}]} />
+              <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ position:"relative", width:180, height:180 }}>
+                  <Doughnut data={{ labels:["Presencial","Vídeo"], datasets:[{ data:[inPerson||1, video||0], backgroundColor:[B.ch.g, B.ch.t], borderWidth:2, borderColor:"#fff" }] }} options={coD()} />
+                  <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
+                    <div style={{ fontSize:20, fontWeight:700, color:B.t1, fontFamily:F }}>{total}</div>
+                    <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>total</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </Card>
-        <Card title="Peak hours" source="Elation API">
-          <div style={{ height:234 }}><Bar data={D.peak} options={co()} /></div>
+
+        <Card title="Appointments por status" source="Elation API — live">
+          {loading ? (
+            <div style={{ height:234, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Carregando...</div>
+          ) : (
+            <div style={{ height:234 }}>
+              <Bar
+                data={{
+                  labels: Object.keys(data?.byStatus || {}),
+                  datasets:[{ data: Object.values(data?.byStatus || {}), backgroundColor: B.ch.g, borderRadius:4 }],
+                }}
+                options={co()}
+              />
+            </div>
+          )}
         </Card>
       </Two>
-      <Card title="Visit volume by state — licensure planning" source="Elation API">
-        <Tbl headers={["State","Visits MTD","% of total","Clinicians licensed","Capacity"]} rows={[["Florida","412","56%","3",<Pill type="success">Optimal</Pill>],["Texas","178","24%","2",<Pill type="success">Optimal</Pill>],["New York","96","13%","1",<Pill type="warning">Monitor</Pill>],["California","50","7%","1",<Pill type="warning">Monitor</Pill>]]} />
+
+      <Card title="Clínicos ativos" source="Elation API — live">
+        {loading ? (
+          <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Carregando...</div>
+        ) : (
+          <Tbl
+            headers={["Clínico","Credenciais","Ativo","Total appointments","Status"]}
+            rows={physicians.map((ph) => [
+              ph.name,
+              ph.credentials || "—",
+              ph.is_active ? "Sim" : "Não",
+              ph.stats.total,
+              <Pill type={ph.is_active ? "success" : "neutral"}>{ph.is_active ? "Ativo" : "Inativo"}</Pill>,
+            ])}
+          />
+        )}
       </Card>
     </div>
   );
