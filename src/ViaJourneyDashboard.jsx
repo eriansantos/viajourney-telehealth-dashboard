@@ -162,12 +162,10 @@ function Notice({ type="info", children }) {
   );
 }
 
-function SecHeader({ tag, title, desc }) {
+function SecHeader({ title }) {
   return (
     <div style={{ marginBottom:18 }}>
-      <p style={{ fontSize:11, fontWeight:600, color:B.g600, letterSpacing:"0.06em", textTransform:"uppercase", margin:"0 0 4px", fontFamily:F }}>{tag}</p>
-      <h2 style={{ fontSize:18, fontWeight:700, color:B.t1, margin:"0 0 4px", fontFamily:F, letterSpacing:"-0.02em" }}>{title}</h2>
-      {desc && <p style={{ fontSize:12, color:B.t2, margin:0, lineHeight:1.6, fontFamily:F }}>{desc}</p>}
+      <h2 style={{ fontSize:18, fontWeight:700, color:B.t1, margin:0, fontFamily:F, letterSpacing:"-0.02em" }}>{title}</h2>
     </div>
   );
 }
@@ -299,24 +297,24 @@ function VVisits() {
 
       <Grid>
         <KpiCard label="Total appointments"    value={loading ? "…" : total}        trend={loading ? "" : "Elation live"} accent={B.ch.g} />
-        <KpiCard label="Visits per clinician"  value={loading ? "…" : perClinician} subunit="por clínico ativo"           accent={B.ch.t} />
+        <KpiCard label="Visits per clinician"  value={loading ? "…" : perClinician} subunit="per active clinician"        accent={B.ch.t} />
         <KpiCard label="Telehealth (video)"    value={loading ? "…" : `${videoPct}`} unit="%"                              accent={B.ch.a} />
-        <KpiCard label="Clínicos ativos"       value={loading ? "…" : activePh}     subunit="na prática"                  accent={B.g700} />
+        <KpiCard label="Active clinicians"     value={loading ? "…" : activePh}     subunit="in practice"                 accent={B.g700} />
       </Grid>
 
       <Two>
-        <Card title="Appointments por modo" source="Elation API — live">
+        <Card title="Appointments by mode" source="Elation API — live">
           {loading ? (
-            <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Carregando...</div>
+            <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
             <>
-              <Lgnd items={[{label:`Presencial ${inPerson}`,color:B.ch.g},{label:`Vídeo ${video}`,color:B.ch.t}]} />
+              <Lgnd items={[{label:`In-person ${inPerson}`,color:B.ch.g},{label:`Video ${video}`,color:B.ch.t}]} />
               <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <div style={{ position:"relative", width:180, height:180 }}>
-                  <Doughnut data={{ labels:["Presencial","Vídeo"], datasets:[{ data:[inPerson||1, video||0], backgroundColor:[B.ch.g, B.ch.t], borderWidth:2, borderColor:"#fff" }] }} options={coD()} />
+                  <Doughnut data={{ labels:["In-person","Video"], datasets:[{ data:[inPerson||1, video||0], backgroundColor:[B.ch.g, B.ch.t], borderWidth:2, borderColor:"#fff" }] }} options={coD()} />
                   <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
                     <div style={{ fontSize:20, fontWeight:700, color:B.t1, fontFamily:F }}>{total}</div>
-                    <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>total</div>
+                    <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>Total</div>
                   </div>
                 </div>
               </div>
@@ -324,9 +322,9 @@ function VVisits() {
           )}
         </Card>
 
-        <Card title="Appointments por status" source="Elation API — live">
+        <Card title="Appointments by status" source="Elation API — live">
           {loading ? (
-            <div style={{ height:234, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Carregando...</div>
+            <div style={{ height:234, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
             <div style={{ height:234 }}>
               <Bar
@@ -341,18 +339,18 @@ function VVisits() {
         </Card>
       </Two>
 
-      <Card title="Clínicos ativos" source="Elation API — live">
+      <Card title="Active clinicians" source="Elation API — live">
         {loading ? (
-          <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Carregando...</div>
+          <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : (
           <Tbl
-            headers={["Clínico","Credenciais","Ativo","Total appointments","Status"]}
+            headers={["Clinician","Credentials","Active","Total appointments","Status"]}
             rows={physicians.map((ph) => [
               ph.name,
               ph.credentials || "—",
-              ph.is_active ? "Sim" : "Não",
+              ph.is_active ? "Yes" : "No",
               ph.stats.total,
-              <Pill type={ph.is_active ? "success" : "neutral"}>{ph.is_active ? "Ativo" : "Inativo"}</Pill>,
+              <Pill type={ph.is_active ? "success" : "neutral"}>{ph.is_active ? "Active" : "Inactive"}</Pill>,
             ])}
           />
         )}
