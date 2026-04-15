@@ -87,7 +87,7 @@ const spinner = (h=90) => (
 );
 
 // ── Main component ─────────────────────────────────────────────────────────
-const REFRESH_MS = 10_000; // 10 segundos
+const REFRESH_MS = 60_000; // 1 minuto
 
 export default function VOverview() {
   const { getToken } = useAuth();
