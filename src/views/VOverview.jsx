@@ -9,13 +9,15 @@ import Card from "../components/atoms/Card.jsx";
 import Grid from "../components/atoms/Grid.jsx";
 import Two from "../components/atoms/Two.jsx";
 
-// ── Inline metric row inside a domain card ────────────────────────────────────
-function Metric({ label, value, unit, accent }) {
+// ── Metric row ────────────────────────────────────────────────────────────────
+function Metric({ label, value, unit, accent, dim }) {
+  const c = dim ? B.t4 : B.t2;
+  const v = dim ? B.t4 : (accent ?? B.t1);
   return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 0", borderBottom:`1px solid ${B.border}` }}>
-      <span style={{ fontSize:12, color:B.t2, fontFamily:F }}>{label}</span>
-      <span style={{ fontSize:14, fontWeight:700, color: accent ?? B.t1, fontFamily:F, letterSpacing:"-0.01em" }}>
-        {value}{unit ? <span style={{ fontSize:11, fontWeight:500, color:B.t3, marginLeft:2 }}>{unit}</span> : null}
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${B.border}` }}>
+      <span style={{ fontSize:12, color:c, fontFamily:F }}>{label}</span>
+      <span style={{ fontSize:13, fontWeight:700, color:v, fontFamily:F, letterSpacing:"-0.01em" }}>
+        {value}{unit ? <span style={{ fontSize:11, fontWeight:400, color: dim ? B.t4 : B.t3, marginLeft:2 }}>{unit}</span> : null}
       </span>
     </div>
   );
@@ -30,6 +32,31 @@ function LangBar({ lang, pct, color }) {
         <div style={{ width:`${pct}%`, height:"100%", background:color, borderRadius:3, transition:"width 0.8s ease" }} />
       </div>
       <span style={{ fontSize:11, fontWeight:600, color:B.t1, fontFamily:F, width:28, textAlign:"right" }}>{pct}%</span>
+    </div>
+  );
+}
+
+// ── System status badge ───────────────────────────────────────────────────────
+function SysBadge({ live, system }) {
+  if (live) return (
+    <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, color:B.g600, letterSpacing:"0.04em", fontFamily:F, textTransform:"uppercase", background:B.g100, borderRadius:10, padding:"2px 6px", flexShrink:0 }}>
+      <span style={{ width:4, height:4, borderRadius:"50%", background:B.g500, animation:"pulse 2s infinite", flexShrink:0 }} />
+      live
+    </span>
+  );
+  return (
+    <span style={{ display:"inline-flex", alignItems:"center", fontSize:9, fontWeight:600, color:B.t3, letterSpacing:"0.03em", fontFamily:F, background:B.bg, borderRadius:10, padding:"2px 7px", border:`1px solid ${B.border}`, flexShrink:0, whiteSpace:"nowrap" }}>
+      Needs {system}
+    </span>
+  );
+}
+
+// ── Section divider ───────────────────────────────────────────────────────────
+function SectionLabel({ children }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, marginTop:6 }}>
+      <span style={{ fontSize:10, fontWeight:700, color:B.t3, letterSpacing:"0.07em", textTransform:"uppercase", fontFamily:F, whiteSpace:"nowrap" }}>{children}</span>
+      <div style={{ flex:1, height:1, background:B.border }} />
     </div>
   );
 }
@@ -73,10 +100,13 @@ export default function VOverview() {
   const cm = data?.compliance;
 
   const totalAppts  = vv?.total ?? "—";
-  const physicians  = (cp?.byPhysician ?? []).filter(p => p.is_active);
-  const activePh    = physicians.length || "—";
-  const topPh       = [...physicians].sort((a, b) => b.stats.total - a.stats.total)[0];
-  const avgVisits   = cp?.avgVisits ?? "—";
+  const inPerson    = vv?.byMode?.IN_PERSON ?? 0;
+  const video       = vv?.byMode?.VIDEO ?? 0;
+  const modeTotal   = inPerson + video || 1;
+  const videoPct    = vv ? Math.round((video / modeTotal) * 100) : "—";
+  const repeatRate  = vv?.repeatRate ?? "—";
+  const peakHour    = vv?.peakHour ?? "—";
+  const peakDay     = vv?.peakDay ?? "—";
 
   const avgLeadRaw  = sc?.avgLeadTimeHours;
   const avgLead     = avgLeadRaw != null
@@ -87,19 +117,16 @@ export default function VOverview() {
   const cancelRate  = sc?.cancellationRate ?? "—";
   const avgDuration = sc?.avgDuration     ?? "—";
 
-  const inPerson  = vv?.byMode?.IN_PERSON ?? 0;
-  const video     = vv?.byMode?.VIDEO     ?? 0;
-  const modeTotal = inPerson + video || 1;
-  const videoPct  = vv ? Math.round((video / modeTotal) * 100) : "—";
-  const repeatRate = vv?.repeatRate ?? "—";
-  const peakHour   = vv?.peakHour  ?? "—";
-  const peakDay    = vv?.peakDay   ?? "—";
-
   const langSummary = le?.summary ?? [];
 
-  const docRate    = cm?.docRate    ?? "—";
-  const signedRate = cm?.signedRate ?? "—";
-  const outliers   = cm?.outlierCount ?? "—";
+  const physicians  = (cp?.byPhysician ?? []).filter(p => p.is_active);
+  const activePh    = physicians.length || "—";
+  const topPh       = [...physicians].sort((a, b) => b.stats.total - a.stats.total)[0];
+  const avgVisits   = cp?.avgVisits ?? "—";
+
+  const docRate     = cm?.docRate    ?? "—";
+  const signedRate  = cm?.signedRate ?? "—";
+  const outliers    = cm?.outlierCount ?? "—";
 
   // ── Peak hour chart ───────────────────────────────────────────────────────────
   const hourEntries = Object.entries(vv?.byHour || {}).sort((a, b) => +a[0] - +b[0]);
@@ -123,13 +150,13 @@ export default function VOverview() {
 
   // ── Hero KPIs ─────────────────────────────────────────────────────────────────
   const heroKpis = [
-    { label:"Total appointments",  value: L ?? totalAppts,  unit: undefined,     trend:"Elation — live" },
-    { label:"Same-day bookings",   value: L ?? sameDayRate, unit: L ? "" : "%",  trend:"booked & seen same day" },
-    { label:"Active clinicians",   value: L ?? activePh,    unit: undefined,     trend:"in practice" },
-    { label:"Open outlier flags",  value: L ?? outliers,    unit: undefined,     trend:"compliance alerts" },
+    { label:"Total appointments", value: L ?? totalAppts,  unit: undefined,    trend:"Elation — live" },
+    { label:"Same-day rate",      value: L ?? sameDayRate, unit: L ? "" : "%", trend:"booked & seen same day" },
+    { label:"Active members",     value: "—",              unit: undefined,    trend:"Needs Hint API" },
+    { label:"Satisfaction",       value: "—",              unit: "/5",         trend:"Needs patient forms" },
   ];
 
-  const spinner = (h = 120) => (
+  const spinner = (h = 100) => (
     <div style={{ height:h, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>
       Loading…
     </div>
@@ -145,33 +172,31 @@ export default function VOverview() {
         </div>
       )}
 
-      {/* ── 4 domain snapshot cards ─────────────────────────────────────────── */}
-      <Grid cols={4} mb={12}>
+      {/* ── Live — Elation EHR ────────────────────────────────────────────────── */}
+      <SectionLabel>Elation EHR — Live</SectionLabel>
+      <Grid cols={3} mb={12}>
 
-        {/* Access & Speed */}
-        <Card title="Access & Speed">
+        <Card title="Visit Volume" badge={<SysBadge live />}>
           {loading ? spinner() : <>
-            <Metric label="Avg lead time"     value={avgLead}                                  accent={B.ch.t} />
-            <Metric label="Same-day rate"     value={sameDayRate}     unit="%"                 accent={B.ch.g} />
-            <Metric label="Avg duration"      value={avgDuration}     unit="min"               accent={B.t1}   />
-            <Metric label="Cancellation"      value={cancelRate}      unit="%"                 accent={B.ch.a} />
-            <Metric label="No-show rate"      value={noShowRate}      unit="%"                 accent={B.ch.r} />
+            <Metric label="Total appointments" value={totalAppts}                     accent={B.ch.g} />
+            <Metric label="Telehealth (video)"  value={videoPct}   unit="%"           accent={B.ch.t} />
+            <Metric label="Repeat visit rate"   value={repeatRate} unit="%"           accent={B.ch.a} />
+            <Metric label="Peak hour"           value={peakHour}                      accent={B.t1}   />
+            <Metric label="Peak day"            value={peakDay}                       accent={B.t1}   />
           </>}
         </Card>
 
-        {/* Visit Volume */}
-        <Card title="Visit Volume">
+        <Card title="Access & Speed" badge={<SysBadge live />}>
           {loading ? spinner() : <>
-            <Metric label="Total appointments" value={totalAppts}                              accent={B.ch.g} />
-            <Metric label="Telehealth (video)" value={videoPct}       unit="%"                accent={B.ch.t} />
-            <Metric label="Repeat visit rate"  value={repeatRate}     unit="%"                accent={B.ch.a} />
-            <Metric label="Peak hour"          value={peakHour}                               accent={B.t1}   />
-            <Metric label="Peak day"           value={peakDay}                                accent={B.t1}   />
+            <Metric label="Avg lead time"  value={avgLead}                            accent={B.ch.t} />
+            <Metric label="Same-day rate"  value={sameDayRate} unit="%"              accent={B.ch.g} />
+            <Metric label="Avg duration"   value={avgDuration} unit="min"            accent={B.t1}   />
+            <Metric label="Cancellation"   value={cancelRate}  unit="%"              accent={B.ch.a} />
+            <Metric label="No-show rate"   value={noShowRate}  unit="%"              accent={B.ch.r} />
           </>}
         </Card>
 
-        {/* Language & Equity */}
-        <Card title="Language & Equity">
+        <Card title="Language & Equity" badge={<SysBadge live />}>
           {loading ? spinner() : (
             <div style={{ paddingTop:6 }}>
               {langSummary.filter(s => s.visits > 0).map(s => (
@@ -184,42 +209,105 @@ export default function VOverview() {
           )}
         </Card>
 
-        {/* Clinician & Compliance */}
-        <Card title="Clinicians & Compliance">
+        <Card title="Clinician Performance" badge={<SysBadge live />}>
           {loading ? spinner() : <>
-            <Metric label="Active clinicians"  value={activePh}                               accent={B.ch.g} />
-            <Metric label="Avg visits"         value={avgVisits}      unit="/ clinician"      accent={B.t1}   />
-            <Metric label="Top performer"      value={topPh?.name?.split(" ").at(-1) ?? "—"}  accent={B.ch.g} />
-            <Metric label="Notes signed"       value={signedRate}     unit="%"                accent={B.ch.t} />
-            <Metric label="Outlier flags"      value={outliers}       unit={outliers === 1 ? " flag" : " flags"} accent={outliers > 0 ? B.ch.a : B.ch.g} />
+            <Metric label="Active clinicians" value={activePh}                        accent={B.ch.g} />
+            <Metric label="Avg visits"        value={avgVisits} unit="/ clinician"    accent={B.t1}   />
+            <Metric label="Top performer"     value={topPh?.name?.split(" ").at(-1) ?? "—"} accent={B.ch.g} />
           </>}
         </Card>
+
+        <Card title="Compliance & Risk" badge={<SysBadge live />}>
+          {loading ? spinner() : <>
+            <Metric label="Documentation rate" value={docRate}    unit="%"            accent={B.ch.g} />
+            <Metric label="Notes signed"        value={signedRate} unit="%"           accent={B.ch.t} />
+            <Metric label="Outlier flags"       value={outliers}
+              unit={outliers === 1 ? " flag" : " flags"}
+              accent={outliers > 0 ? B.ch.a : B.ch.g} />
+          </>}
+        </Card>
+
       </Grid>
 
-      {/* ── Peak charts ─────────────────────────────────────────────────────── */}
-      <Two>
-        <Card title="Appointments by hour" source="Elation API — live">
-          {loading ? spinner(180) : hourValues.length === 0 ? spinner(180) : (
-            <div style={{ height:180 }}>
+      {/* ── Peak charts ──────────────────────────────────────────────────────── */}
+      <Two mb={12}>
+        <Card title="Appointments by hour" source="Elation — live">
+          {loading || hourValues.length === 0 ? spinner(160) : (
+            <div style={{ height:160 }}>
               <Bar
-                data={{ labels: hourLabels, datasets:[{ data: hourValues, backgroundColor: hourColors, borderRadius:4 }] }}
+                data={{ labels:hourLabels, datasets:[{ data:hourValues, backgroundColor:hourColors, borderRadius:4 }] }}
                 options={co()}
               />
             </div>
           )}
         </Card>
 
-        <Card title="Appointments by day of week" source="Elation API — live">
-          {loading ? spinner(180) : dayValues.length === 0 ? spinner(180) : (
-            <div style={{ height:180 }}>
+        <Card title="Appointments by day" source="Elation — live">
+          {loading || dayValues.length === 0 ? spinner(160) : (
+            <div style={{ height:160 }}>
               <Bar
-                data={{ labels: dayLabels, datasets:[{ data: dayValues, backgroundColor: dayColors, borderRadius:4 }] }}
+                data={{ labels:dayLabels, datasets:[{ data:dayValues, backgroundColor:dayColors, borderRadius:4 }] }}
                 options={co()}
               />
             </div>
           )}
         </Card>
       </Two>
+
+      {/* ── Pending integrations ──────────────────────────────────────────────── */}
+      <SectionLabel>Pending Integrations</SectionLabel>
+      <Grid cols={3} mb={0}>
+
+        <Card title="Clinical Outcomes" badge={<SysBadge system="Patient Forms" />}>
+          <Metric label="ER / UC avoidance"    value="—" unit="%" dim />
+          <Metric label="Resolved at 7 days"   value="—" unit="%" dim />
+          <Metric label="Worsening rate"        value="—" unit="%" dim />
+          <Metric label="Re-visit same issue"   value="—" unit="%" dim />
+        </Card>
+
+        <Card title="Patient Experience" badge={<SysBadge system="Patient Forms" />}>
+          <Metric label="Satisfaction (48h)"   value="—" unit="/5" dim />
+          <Metric label="Would recommend"      value="—" unit="%"  dim />
+          <Metric label="Complaints / 100"     value="—"           dim />
+          <Metric label="Repeat usage rate"    value="—" unit="%"  dim />
+        </Card>
+
+        <Card title="Membership" badge={<SysBadge system="Hint API" />}>
+          <Metric label="Active members"       value="—"           dim />
+          <Metric label="New members (MTD)"    value="—"           dim />
+          <Metric label="Monthly churn"        value="—" unit="%"  dim />
+          <Metric label="Avg membership tenure" value="—" unit="mo" dim />
+        </Card>
+
+        <Card title="Revenue" badge={<SysBadge system="Hint API" />}>
+          <Metric label="Revenue (MTD)"        value="—"           dim />
+          <Metric label="Revenue per patient"  value="—"           dim />
+          <Metric label="Failed payment rate"  value="—" unit="%"  dim />
+          <Metric label="Refund rate"          value="—" unit="%"  dim />
+        </Card>
+
+        <Card title="Operations & Support" badge={<SysBadge system="RingCentral + GHL" />}>
+          <Metric label="Avg response time"    value="—" unit="min" dim />
+          <Metric label="Follow-up completion" value="—" unit="%"   dim />
+          <Metric label="Messages per visit"   value="—"            dim />
+          <Metric label="Calls per visit"      value="—"            dim />
+        </Card>
+
+        <Card title="Growth & Funnel" badge={<SysBadge system="GoHighLevel" />}>
+          <Metric label="Total leads (MTD)"    value="—"           dim />
+          <Metric label="Lead → booked"        value="—" unit="%"  dim />
+          <Metric label="Lead → member"        value="—" unit="%"  dim />
+          <Metric label="Self-schedule rate"   value="—" unit="%"  dim />
+        </Card>
+
+        <Card title="B2B / Employer" badge={<SysBadge system="Elation + Forms" />}>
+          <Metric label="Active contracts"     value="—"           dim />
+          <Metric label="Covered lives"        value="—"           dim />
+          <Metric label="ER avoidance avg"     value="—" unit="%"  dim />
+          <Metric label="Avg satisfaction"     value="—" unit="/5" dim />
+        </Card>
+
+      </Grid>
     </div>
   );
 }
