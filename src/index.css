@@ -43,3 +43,25 @@ button:focus-visible {
   50%       { opacity: 0.35; }
 }
 
+/* ── Clerk sign-in widget overrides ────────────────────────────────────────────
+   Hide the floating card chrome and internal header so our own layout
+   takes visual control of the login page. */
+.cl-card {
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+.cl-cardBox {
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+.cl-header { display: none !important; }     /* hides "Sign in to…" + subtitle */
+.cl-logoBox { display: none !important; }    /* hides Clerk-generated logo */
+.cl-logoImage { display: none !important; }
+.cl-footer {
+  background: transparent !important;
+  border-top: 1px solid #E2EAE4 !important;
+  margin-top: 8px !important;
+}
