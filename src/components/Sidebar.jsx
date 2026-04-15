@@ -106,15 +106,14 @@ export default function Sidebar({ active, onSelect, clock }) {
     <aside style={{ width:220, flexShrink:0, background:B.sbg, borderRight:`1px solid ${B.border}`, display:"flex", flexDirection:"column", height:"100vh", overflowY:"auto" }}>
 
       {/* Logo */}
-      <div style={{ padding:"16px 14px 14px", borderBottom:`1px solid ${B.border}`, flexShrink:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-          <div style={{ width:32, height:32, borderRadius:8, background:`linear-gradient(135deg,${B.g700},${B.g500})`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-            <span style={{ color:"#fff", fontSize:12, fontWeight:700, fontFamily:F }}>VJ</span>
-          </div>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:B.t1, fontFamily:F, letterSpacing:"-0.01em", lineHeight:1.2 }}>Via Journey</div>
-            <div style={{ fontSize:10, color:B.t3, fontFamily:F, marginTop:1 }}>Clinical Dashboard</div>
-          </div>
+      <div style={{ padding:"14px 16px 12px", borderBottom:`1px solid ${B.border}`, flexShrink:0 }}>
+        <img
+          src="/logo-h.png"
+          alt="ViaJourney Telehealth"
+          style={{ height:30, width:"auto", display:"block", objectFit:"contain" }}
+        />
+        <div style={{ fontSize:9, fontWeight:600, color:B.t4, fontFamily:F, letterSpacing:"0.08em", textTransform:"uppercase", marginTop:5 }}>
+          Clinical Dashboard
         </div>
       </div>
 
