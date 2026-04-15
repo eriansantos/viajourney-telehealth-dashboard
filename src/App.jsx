@@ -43,28 +43,6 @@ const clerkAppearance = {
   },
 }
 
-// ── SVG icons for feature bullets (no emoji) ──────────────────────────────
-function FeatureIcon({ path }) {
-  return (
-    <div style={{
-      width:36, height:36, borderRadius:9, flexShrink:0,
-      background:'rgba(255,255,255,0.12)',
-      border:'1px solid rgba(255,255,255,0.15)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-    }}>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d={path} />
-      </svg>
-    </div>
-  )
-}
-
-const FEATURES = [
-  { path:"M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z", text:"Dados ao vivo via Elation EHR" },
-  { path:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", text:"Métricas de acesso e equidade linguística" },
-  { path:"M22 12h-4l-3 9L9 3l-3 9H2", text:"Performance clínica e compliance em tempo real" },
-]
-
 export default function App() {
   return (
     <>
@@ -99,16 +77,6 @@ export default function App() {
             <p style={{ fontSize:14, color:'rgba(255,255,255,0.55)', maxWidth:300, lineHeight:1.75, margin:'0 0 52px' }}>
               Visibilidade clínica completa para equipes de saúde primária, em tempo real.
             </p>
-
-            {/* Feature list */}
-            <div style={{ display:'flex', flexDirection:'column', gap:18, width:'100%', maxWidth:340 }}>
-              {FEATURES.map((f, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:14 }}>
-                  <FeatureIcon path={f.path} />
-                  <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)', lineHeight:1.45 }}>{f.text}</span>
-                </div>
-              ))}
-            </div>
 
             {/* Bottom tagline */}
             <div style={{ position:'absolute', bottom:28, left:56, fontSize:10, color:'rgba(255,255,255,0.25)', letterSpacing:'0.10em', textTransform:'uppercase' }}>
