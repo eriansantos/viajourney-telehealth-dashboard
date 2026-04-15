@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Bar } from "react-chartjs-2";
 import { apiGet } from "../lib/api.js";
@@ -87,28 +87,55 @@ const spinner = (h=90) => (
 );
 
 // ── Main component ─────────────────────────────────────────────────────────
+const REFRESH_MS = 10_000; // 10 segundos
+
 export default function VOverview() {
   const { getToken } = useAuth();
-  const [data, setData]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+  const [data, setData]           = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [countdown, setCountdown] = useState(REFRESH_MS / 1000);
+  const cancelledRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true); setError(null);
-    Promise.all([
-      apiGet("/api/elation/visit-volume",         getToken),
-      apiGet("/api/elation/speed-to-care",        getToken),
-      apiGet("/api/elation/language-equity",       getToken),
-      apiGet("/api/elation/clinician-performance", getToken),
-      apiGet("/api/elation/compliance",            getToken),
-    ])
-      .then(([visitVolume, speedToCare, languageEquity, clinicianPerf, compliance]) => {
-        if (!cancelled) { setData({ visitVolume, speedToCare, languageEquity, clinicianPerf, compliance }); setLoading(false); }
-      })
-      .catch((e) => { if (!cancelled) { setError(e.message); setLoading(false); } });
-    return () => { cancelled = true; };
+  const fetchAll = useCallback(async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    setError(null);
+    try {
+      const [visitVolume, speedToCare, languageEquity, clinicianPerf, compliance] =
+        await Promise.all([
+          apiGet("/api/elation/visit-volume",         getToken),
+          apiGet("/api/elation/speed-to-care",        getToken),
+          apiGet("/api/elation/language-equity",       getToken),
+          apiGet("/api/elation/clinician-performance", getToken),
+          apiGet("/api/elation/compliance",            getToken),
+        ]);
+      if (!cancelledRef.current) {
+        setData({ visitVolume, speedToCare, languageEquity, clinicianPerf, compliance });
+        setLastUpdated(new Date());
+        setLoading(false);
+        setCountdown(REFRESH_MS / 1000);
+      }
+    } catch (e) {
+      if (!cancelledRef.current) { setError(e.message); setLoading(false); }
+    }
   }, [getToken]);
+
+  // ── Fetch inicial + intervalo de 10s ──────────────────────────────────────
+  useEffect(() => {
+    cancelledRef.current = false;
+    fetchAll(true);
+    const interval = setInterval(() => fetchAll(false), REFRESH_MS);
+    return () => { cancelledRef.current = true; clearInterval(interval); };
+  }, [fetchAll]);
+
+  // ── Countdown visual (decrementa a cada 1s) ───────────────────────────────
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setCountdown(c => (c <= 1 ? REFRESH_MS / 1000 : c - 1));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   // ── Derived values ──────────────────────────────────────────────────────
   const vv = data?.visitVolume;
@@ -173,9 +200,34 @@ export default function VOverview() {
     { label:"Satisfaction",       value: "—",              unit: "/5"         },
   ];
 
+  // ── Formata hora da última atualização ───────────────────────────────────
+  const updatedStr = lastUpdated
+    ? lastUpdated.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit" })
+    : null;
+
   return (
     <div>
       <Hero kpis={heroKpis} />
+
+      {/* ── Barra de status de atualização ─────────────────────────────────── */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:10, marginBottom:10 }}>
+        {updatedStr && (
+          <span style={{ fontSize:10, color:B.t4, fontFamily:F }}>
+            Atualizado às {updatedStr}
+          </span>
+        )}
+        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+          <div style={{ position:"relative", width:28, height:4, background:B.border, borderRadius:2, overflow:"hidden" }}>
+            <div style={{
+              position:"absolute", left:0, top:0, height:"100%", borderRadius:2,
+              background: B.ch.g,
+              width:`${(countdown / (REFRESH_MS / 1000)) * 100}%`,
+              transition:"width 1s linear",
+            }} />
+          </div>
+          <span style={{ fontSize:10, color:B.t4, fontFamily:F, width:14 }}>{countdown}s</span>
+        </div>
+      </div>
 
       {error && (
         <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
