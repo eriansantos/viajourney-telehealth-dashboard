@@ -36,3 +36,8 @@ button:focus-visible {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #D1D9D1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #A8BBA8; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}

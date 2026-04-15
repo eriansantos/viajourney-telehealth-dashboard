@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { useClerk, useAuth } from "@clerk/clerk-react";
+import { useClerk, useAuth, useUser } from "@clerk/clerk-react";
 import { apiGet } from "./lib/api.js";
 import {
   Chart as ChartJS,
@@ -39,7 +39,17 @@ const B = {
   warn:  "#92560A", warnBg:"#FEF3C7",
   neg:   "#B91C1C", negBg: "#FEF2F2",
   info:  "#1447A0", infoBg:"#EBF3FF",
-  ch: { g:"#2E9E58", t:"#0B8A7A", a:"#D97706", r:"#DC2626", s:"#94A3B8" },
+  // Paleta de gráficos — ancorada no verde Via Journey + teal complementar + semânticos
+  ch: {
+    g:  "#2E9E58", // verde primário (brand)
+    g2: "#4CC87A", // verde médio
+    g3: "#86EFAC", // verde claro
+    t:  "#0B8A7A", // teal (complementar ao verde)
+    t2: "#2DD4BF", // teal médio
+    a:  "#D97706", // âmbar (atenção)
+    r:  "#C0392B", // vermelho (negativo)
+    s:  "#94A3B8", // slate (neutro/inativo)
+  },
 };
 
 const F = "'Inter', system-ui, sans-serif";
@@ -216,13 +226,17 @@ function Soon({ title, desc, sources }) {
 
 // ─── Hero banner ─────────────────────────────────────────────────────────────
 function Hero() {
+  const { user } = useUser();
+  const firstName = user?.firstName || user?.fullName?.split(" ")[0] || "";
   const day = new Date().toLocaleDateString("en-US",{ weekday:"long", month:"long", day:"numeric" });
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   return (
     <div style={{ background:`linear-gradient(135deg, ${B.g800} 0%, ${B.g600} 60%, ${B.g500} 100%)`, borderRadius:12, padding:"20px 24px 18px", marginBottom:16, position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:-50, right:-50, width:180, height:180, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }} />
       <div style={{ position:"absolute", bottom:-30, right:120, width:120, height:120, borderRadius:"50%", background:"rgba(255,255,255,0.03)", pointerEvents:"none" }} />
       <p style={{ fontSize:12, color:"rgba(255,255,255,0.55)", margin:"0 0 2px", fontFamily:F, fontWeight:500 }}>{day}</p>
-      <h1 style={{ fontSize:20, fontWeight:700, color:"#fff", margin:"0 0 16px", fontFamily:F, letterSpacing:"-0.02em" }}>Good morning, Dr. Andre</h1>
+      <h1 style={{ fontSize:20, fontWeight:700, color:"#fff", margin:"0 0 16px", fontFamily:F, letterSpacing:"-0.02em" }}>{greeting}{firstName ? `, ${firstName}` : ""}</h1>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
         <HeroKpi label="Visits this week"  value="184"   trend="↑ +12% vs last week" />
         <HeroKpi label="ER/UC avoidance"   value="78"    unit="%" trend="↑ +3pts vs last month" />
@@ -276,42 +290,100 @@ function VVisits() {
     return () => { cancelled = true; };
   }, [getToken]);
 
-  const total       = data?.total ?? "—";
-  const physicians  = data?.byPhysician ?? [];
-  const activePh    = physicians.filter((p) => p.is_active).length;
+  const total        = data?.total ?? "—";
+  const physicians   = data?.byPhysician ?? [];
+  const activePh     = physicians.filter((p) => p.is_active).length;
   const perClinician = activePh > 0 ? Math.round(data.total / activePh) : "—";
-  const inPerson    = data?.byMode?.IN_PERSON ?? 0;
-  const video       = data?.byMode?.VIDEO ?? 0;
-  const modeTotal   = inPerson + video || 1;
-  const videoPct    = Math.round((video / modeTotal) * 100);
+  const inPerson     = data?.byMode?.IN_PERSON ?? 0;
+  const video        = data?.byMode?.VIDEO ?? 0;
+  const modeTotal    = inPerson + video || 1;
+  const videoPct     = Math.round((video / modeTotal) * 100);
+
+  const TYPE_COLORS   = { Member: B.ch.g, Concierge: B.ch.t, "One Time": B.ch.g2 };
+  const STATUS_COLORS = {
+    "Scheduled":              B.ch.s,   // slate — pendente/neutro
+    "Confirmed":              B.ch.t2,  // teal claro — confirmado
+    "Checked In":             B.ch.t,   // teal — chegou
+    "In Room":                B.g600,   // verde médio
+    "In Room - Vitals Taken": B.g600,
+    "With Doctor":            B.ch.g,   // verde primário
+    "Checked Out":            B.g700,   // verde escuro — concluído
+    "Billed":                 B.g800,   // verde muito escuro — faturado
+    "Not Seen":               B.ch.a,   // âmbar — atenção
+    "Cancelled":              B.ch.r,   // vermelho — negativo
+  };
+  // Status group donut (Completed / No Access / Pending)
+  const GROUP_COLORS = { Completed: B.ch.g, "No Access": B.ch.r, Pending: B.ch.s, Other: B.t3 };
+  const GROUP_ORDER  = ["Completed","Pending","No Access","Other"];
+  const sgRaw        = data?.byStatusGroup ?? {};
+  const sgLabels     = GROUP_ORDER.filter(k => sgRaw[k]);
+  const sgValues     = sgLabels.map(k => sgRaw[k]);
+  const sgColors     = sgLabels.map(k => GROUP_COLORS[k]);
+
+  // Individual status funnel (workflow order)
+  const STATUS_ORDER  = ["Scheduled","Confirmed","Checked In","In Room","In Room - Vitals Taken","With Doctor","Checked Out","Billed","Not Seen","Cancelled"];
+  const statusRaw     = data?.byStatus ?? {};
+  const funnelLabels  = STATUS_ORDER.filter(s => statusRaw[s]);
+  const funnelValues  = funnelLabels.map(s => statusRaw[s]);
+  const funnelColors  = funnelLabels.map(s => STATUS_COLORS[s] ?? B.ch.s);
+
+  const typeEntries  = Object.entries(data?.byType ?? {}).sort((a,b) => b[1]-a[1]);
+  const typeLabels   = typeEntries.map(([k]) => k);
+  const typeValues   = typeEntries.map(([,v]) => v);
+  const typeBgColors = typeLabels.map(k => TYPE_COLORS[k] ?? B.ch.s);
+  const peakHour     = data?.peakHour ?? "—";
+  const peakDay      = data?.peakDay ?? "—";
+  const repeatRate   = data?.repeatRate ?? "—";
+
+  // Peak appointments by hour (bar chart)
+  const hourLabels   = Object.keys(data?.byHour || {}).map((h) => {
+    const n = parseInt(h);
+    return n === 0 ? "12 AM" : n < 12 ? `${n} AM` : n === 12 ? "12 PM" : `${n-12} PM`;
+  });
+  const hourValues   = Object.values(data?.byHour || {});
+
+  // Peak appointments by day of week
+  const dayOrder   = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const byDay      = data?.byDayOfWeek || {};
+  const dayLabels  = dayOrder.filter((d) => byDay[d] !== undefined);
+  const dayValues  = dayLabels.map((d) => byDay[d]);
 
   return (
     <div>
-      <SecHeader tag="Module 2 · Priority · Elation API" title="Visit Volume & Utilization" desc="Are you using clinician capacity efficiently?" />
+      <SecHeader title="Visit Volume & Utilization" />
 
       {error && (
         <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
-          Erro ao carregar dados: {error}
+          Error loading data: {error}
         </div>
       )}
 
-      <Grid>
-        <KpiCard label="Total appointments"    value={loading ? "…" : total}        trend={loading ? "" : "Elation live"} accent={B.ch.g} />
-        <KpiCard label="Visits per clinician"  value={loading ? "…" : perClinician} subunit="per active clinician"        accent={B.ch.t} />
-        <KpiCard label="Telehealth (video)"    value={loading ? "…" : `${videoPct}`} unit="%"                              accent={B.ch.a} />
-        <KpiCard label="Active clinicians"     value={loading ? "…" : activePh}     subunit="in practice"                 accent={B.g700} />
+      <Grid cols={4}>
+        <KpiCard label="Total appointments"   value={loading ? "…" : total}         trend={loading ? "" : "Elation live"} accent={B.ch.g} />
+        <KpiCard label="Visits per clinician" value={loading ? "…" : perClinician}  subunit="per active clinician"        accent={B.ch.t} />
+        <KpiCard label="Telehealth (video)"   value={loading ? "…" : `${videoPct}`} unit="%"                              accent={B.ch.a} />
+        <KpiCard label="Active clinicians"    value={loading ? "…" : activePh}      subunit="in practice"                 accent={B.g700} />
       </Grid>
 
-      <Two>
-        <Card title="Appointments by mode" source="Elation API — live">
+      <Grid cols={3}>
+        <KpiCard label="Peak hour"         value={loading ? "…" : peakHour}    subunit="most appointments"  accent={B.ch.t} />
+        <KpiCard label="Peak day"          value={loading ? "…" : peakDay}     subunit="busiest day"        accent={B.ch.g} />
+        <KpiCard label="Repeat visit rate" value={loading ? "…" : repeatRate}  unit="%" subunit="patients with 2+ visits" accent={B.ch.a} />
+      </Grid>
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:12 }}>
+        <Card title="Visits by type" source="Elation API — live">
           {loading ? (
             <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
             <>
-              <Lgnd items={[{label:`In-person ${inPerson}`,color:B.ch.g},{label:`Video ${video}`,color:B.ch.t}]} />
+              <Lgnd items={typeLabels.map((k,i) => ({ label:`${k} ${typeValues[i]}`, color:typeBgColors[i] }))} />
               <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <div style={{ position:"relative", width:180, height:180 }}>
-                  <Doughnut data={{ labels:["In-person","Video"], datasets:[{ data:[inPerson||1, video||0], backgroundColor:[B.ch.g, B.ch.t], borderWidth:2, borderColor:"#fff" }] }} options={coD()} />
+                <div style={{ position:"relative", width:160, height:160 }}>
+                  <Doughnut
+                    data={{ labels:typeLabels, datasets:[{ data:typeValues.length ? typeValues : [1], backgroundColor:typeValues.length ? typeBgColors : [B.border], borderWidth:2, borderColor:"#fff" }] }}
+                    options={coD()}
+                  />
                   <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
                     <div style={{ fontSize:20, fontWeight:700, color:B.t1, fontFamily:F }}>{total}</div>
                     <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>Total</div>
@@ -322,18 +394,78 @@ function VVisits() {
           )}
         </Card>
 
-        <Card title="Appointments by status" source="Elation API — live">
+        <Card title="Appointments by mode" source="Elation API — live">
+          {loading ? (
+            <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : (
+            <>
+              <Lgnd items={[{label:`In-person ${inPerson}`,color:B.ch.g},{label:`Video ${video}`,color:B.ch.t}]} />
+              <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ position:"relative", width:160, height:160 }}>
+                  <Doughnut data={{ labels:["In-person","Video"], datasets:[{ data: modeTotal > 0 ? [inPerson, video] : [1], backgroundColor: modeTotal > 0 ? [B.ch.g, B.ch.t] : [B.border], borderWidth:2, borderColor:"#fff" }] }} options={coD()} />
+                  <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
+                    <div style={{ fontSize:20, fontWeight:700, color:B.t1, fontFamily:F }}>{total}</div>
+                    <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>Total</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </Card>
+
+        <Card title="Status overview" source="Elation API — live">
           {loading ? (
             <div style={{ height:234, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
-            <div style={{ height:234 }}>
-              <Bar
-                data={{
-                  labels: Object.keys(data?.byStatus || {}),
-                  datasets:[{ data: Object.values(data?.byStatus || {}), backgroundColor: B.ch.g, borderRadius:4 }],
-                }}
-                options={co()}
-              />
+            <>
+              <Lgnd items={sgLabels.map((k,i) => ({ label:`${k} ${sgValues[i]}`, color:sgColors[i] }))} />
+              <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ position:"relative", width:160, height:160 }}>
+                  <Doughnut
+                    data={{ labels:sgLabels, datasets:[{ data:sgValues.length ? sgValues : [1], backgroundColor:sgValues.length ? sgColors : [B.border], borderWidth:2, borderColor:"#fff" }] }}
+                    options={coD()}
+                  />
+                  <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", pointerEvents:"none" }}>
+                    <div style={{ fontSize:20, fontWeight:700, color:B.t1, fontFamily:F }}>{total}</div>
+                    <div style={{ fontSize:10, color:B.t3, marginTop:1, fontFamily:F }}>Total</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
+
+      <Card title="Status funnel" source="Elation API — live">
+        {loading ? (
+          <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+        ) : (
+          <div style={{ height:200 }}>
+            <Bar
+              data={{ labels: funnelLabels, datasets:[{ data: funnelValues, backgroundColor: funnelColors, borderRadius:4 }] }}
+              options={co()}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Two>
+        <Card title="Appointments by hour" source="Elation API — live">
+          {loading ? (
+            <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : (
+            <div style={{ height:200 }}>
+              <Bar data={{ labels: hourLabels, datasets:[{ data: hourValues, backgroundColor: B.ch.t, borderRadius:4 }] }} options={co()} />
+            </div>
+          )}
+        </Card>
+
+        <Card title="Appointments by day of week" source="Elation API — live">
+          {loading ? (
+            <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : (
+            <div style={{ height:200 }}>
+              <Bar data={{ labels: dayLabels, datasets:[{ data: dayValues, backgroundColor: B.ch.g, borderRadius:4 }] }} options={co()} />
             </div>
           )}
         </Card>
@@ -360,21 +492,67 @@ function VVisits() {
 }
 
 function VAccess() {
+  const { getToken } = useAuth();
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    apiGet("/api/elation/speed-to-care", getToken)
+      .then((res) => { if (!cancelled) { setData(res); setLoading(false); } })
+      .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, []);
+
+  const avgLead       = data?.avgLeadTimeHours != null
+    ? data.avgLeadTimeHours >= 24
+      ? `${Math.round(data.avgLeadTimeHours / 24)}d`
+      : `${data.avgLeadTimeHours}h`
+    : "—";
+  const sameDayRate   = data?.sameDayRate    ?? "—";
+  const cancelRate    = data?.cancellationRate ?? "—";
+  const noShowRate    = data?.noShowRate     ?? "—";
+  const avgDuration   = data?.avgDuration    ?? "—";
+  const dist          = data?.leadTimeDistribution ?? {};
+  const distLabels    = Object.keys(dist);
+  const distValues    = Object.values(dist);
+
   return (
     <div>
-      <SecHeader tag="Module 3 · Priority · B2B Differentiator" title="Access & Speed-to-Care" desc="Via Journey's strongest competitive differentiator — critical for employer contracts." />
-      <Grid>
-        <KpiCard label="Median: request → appt"      value="1.8"  unit="h"   trend="↑ vs ER avg: 4.2h"    accent={B.ch.t} />
-        <KpiCard label="Median: request → clinician" value="22"   unit="min" trend="↑ vs UC avg: 68min"   accent={B.ch.t} />
-        <KpiCard label="Seen same day"               value="91"   unit="%"   trend="↑ +2pts vs last month" accent={B.ch.g} />
-        <KpiCard label="Seen within 24h"             value="98"   unit="%"   trend="↑ Best-in-class"       accent={B.ch.g} />
+      <SecHeader tag="Module 3 · Priority · Elation API" title="Access & Speed-to-Care" />
+
+      {error && (
+        <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
+          Error loading data: {error}
+        </div>
+      )}
+
+      <Grid cols={4}>
+        <KpiCard label="Avg booking lead time"  value={loading ? "…" : avgLead}                              subunit="scheduled vs created"     accent={B.ch.t} />
+        <KpiCard label="Same-day bookings"      value={loading ? "…" : sameDayRate} unit={loading ? "" : "%"} subunit="booked & seen same day"    accent={B.ch.g} />
+        <KpiCard label="Cancellation rate"      value={loading ? "…" : cancelRate}  unit={loading ? "" : "%"} subunit="of total appointments"     accent={B.ch.a} />
+        <KpiCard label="No-show rate"           value={loading ? "…" : noShowRate}  unit={loading ? "" : "%"} subunit="Not Seen"                  accent={B.ch.r} />
       </Grid>
-      <Card title="Speed-to-care vs industry benchmarks (hours)" source="Elation API + benchmarks" style={{ marginBottom:12 }}>
-        <div style={{ height:230 }}><Bar data={D.speed} options={co()} /></div>
-      </Card>
-      <Card title="Same-day & 24h access — 8-week trend" source="Elation API">
-        <Lgnd items={[{label:"Same day %",color:B.ch.t},{label:"Within 24h %",color:B.ch.g}]} />
-        <div style={{ height:188 }}><Line data={D.access} options={coP(80)} /></div>
+
+      <Grid cols={2} mb={12}>
+        <KpiCard label="Avg appointment duration" value={loading ? "…" : avgDuration} unit={loading ? "" : "min"} subunit="scheduled duration" accent={B.ch.t} />
+        <KpiCard label="Total appointments"       value={loading ? "…" : (data?.total ?? "—")}                    subunit="in selected period"  accent={B.g700} />
+      </Grid>
+
+      <Card title="Booking lead time distribution" source="Elation API — live">
+        {loading ? (
+          <div style={{ height:220, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+        ) : (
+          <div style={{ height:220 }}>
+            <Bar
+              data={{ labels: distLabels, datasets:[{ data: distValues, backgroundColor:[B.ch.g, B.ch.t, B.ch.a, B.ch.r], borderRadius:5 }] }}
+              options={co()}
+            />
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -594,43 +772,131 @@ function VRevenue() {
 }
 
 // ─── Module 8: Language, Access & Equity ────────────────────────────────────
+const LANG_COLORS = { Portuguese: B.ch.g, English: B.ch.t, Spanish: B.ch.a, Other: B.ch.s };
+const langColor = (l) => {
+  if (!l) return B.ch.s;
+  const lo = l.toLowerCase();
+  if (lo.includes("portuguese")) return B.ch.g;
+  if (lo.includes("english"))    return B.ch.t;
+  if (lo.includes("spanish"))    return B.ch.a;
+  return B.ch.s;
+};
+const langShort = (l) => {
+  if (!l) return "Other";
+  const lo = l.toLowerCase();
+  if (lo.includes("portuguese")) return "Portuguese";
+  if (lo.includes("english"))    return "English";
+  if (lo.includes("spanish"))    return "Spanish";
+  return l.split(";")[0].split("(")[0].trim();
+};
+
 function VLanguage() {
+  const { getToken } = useAuth();
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    apiGet("/api/elation/language-equity", getToken)
+      .then((res) => { if (!cancelled) { setData(res); setLoading(false); } })
+      .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, []);
+
+  const summary    = data?.summary ?? [];
+  const summaryRaw = data?.summaryRaw ?? [];
+  const byLangRaw  = data?.byLanguageRaw ?? {};
+  const total      = data?.total ?? 0;
+
+  // Donut — todos os idiomas reais
+  const langLabelsRaw = Object.keys(byLangRaw);
+  const langLabels    = langLabelsRaw.map(l => langShort(l));
+  const langValues    = Object.values(byLangRaw);
+  const langColors    = langLabelsRaw.map(l => langColor(l));
+
+  // Bar lead time — todos os idiomas reais
+  const leadLabelsRaw = summaryRaw.map(s => s.lang);
+  const leadLabels    = leadLabelsRaw.map(l => langShort(l));
+  const leadValues    = summaryRaw.map(s => s.avgLeadTimeDays ?? 0);
+  const leadColors    = leadLabelsRaw.map(l => langColor(l));
+
   return (
     <div>
-      <SecHeader tag="Module 8 · Elation API" title="Language, Access & Equity" desc="Via Journey's unique differentiation — Brazilian Portuguese-first telehealth in the US." />
+      <SecHeader tag="Module 8 · Elation API" title="Language, Access & Equity" />
+
+      {error && (
+        <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
+          Error loading data: {error}
+        </div>
+      )}
+
       <Grid cols={4} mb={12}>
-        <KpiCard label="Portuguese visits"   value="54"   unit="%" subunit="of total volume"    accent={B.ch.g} />
-        <KpiCard label="English visits"      value="28"   unit="%" trend="Stable"               accent={B.ch.t} />
-        <KpiCard label="Spanish visits"      value="15"   unit="%" trend="↑ Growing segment"    accent={B.ch.a} />
-        <KpiCard label="Intake completion"   value="94"   unit="%" trend="↑ +3pts vs last month" accent={B.ch.g} />
+        {["Portuguese","English","Spanish","Other"].map(l => {
+          const s = summary.find(x => x.lang === l);
+          return (
+            <KpiCard key={l} label={`${l} visits`}
+              value={loading ? "…" : (s?.pct ?? 0)} unit={loading ? "" : "%"}
+              subunit={loading ? "" : `${s?.visits ?? 0} appointments`}
+              accent={LANG_COLORS[l]} />
+          );
+        })}
       </Grid>
+
       <Two>
-        <Card title="Visit distribution by language" source="Elation API">
-          <Lgnd items={[{label:"Portuguese 54%",color:B.ch.g},{label:"English 28%",color:B.ch.t},{label:"Spanish 15%",color:B.ch.a},{label:"Other 3%",color:B.ch.s}]} />
-          <div style={{height:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <div style={{position:"relative",width:180,height:180}}>
-              <Doughnut data={D.langVis} options={coD()} />
-              <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",pointerEvents:"none"}}>
-                <div style={{fontSize:16,fontWeight:700,color:B.t1,fontFamily:F}}>736</div>
-                <div style={{fontSize:10,color:B.t3,marginTop:1,fontFamily:F}}>visits MTD</div>
+        <Card title="Visit distribution by language" source="Elation API — live">
+          {loading ? (
+            <div style={{height:210,display:"flex",alignItems:"center",justifyContent:"center",color:B.t3,fontSize:12,fontFamily:F}}>Loading...</div>
+          ) : (
+            <>
+              <Lgnd items={langLabels.map((l,i) => ({ label:`${langShort(l)} ${langValues[i]}`, color:langColors[i] }))} />
+              <div style={{height:210,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <div style={{position:"relative",width:170,height:170}}>
+                  <Doughnut
+                    data={{ labels:langLabels, datasets:[{ data:langValues.length ? langValues : [1], backgroundColor:langValues.length ? langColors : [B.border], borderWidth:2, borderColor:"#fff" }] }}
+                    options={coD()}
+                  />
+                  <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center",pointerEvents:"none"}}>
+                    <div style={{fontSize:20,fontWeight:700,color:B.t1,fontFamily:F}}>{total}</div>
+                    <div style={{fontSize:10,color:B.t3,marginTop:1,fontFamily:F}}>Total</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </Card>
-        <Card title="Median time-to-care by language (hours)" source="Elation API">
-          <div style={{height:220}}><Bar data={D.langTime} options={co()} /></div>
+
+        <Card title="Lead time by language (days)" source="Elation API — live">
+          {loading ? (
+            <div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",color:B.t3,fontSize:12,fontFamily:F}}>Loading...</div>
+          ) : (
+            <div style={{height:220}}>
+              <Bar
+                data={{ labels:leadLabels, datasets:[{ data:leadValues, backgroundColor:leadColors, borderRadius:5 }] }}
+                options={co()}
+              />
+            </div>
+          )}
         </Card>
       </Two>
-      <Card title="Access & outcome equity by language" source="Elation API">
-        <Tbl
-          headers={["Language","Visits MTD","Intake completion","No-show rate","Time-to-care","ER/UC avoidance","Outcome"]}
-          rows={[
-            ["Portuguese","397","96%","3.8%","1.7h","80%",<Pill type="success">Excellent</Pill>],
-            ["English","206","93%","5.2%","1.9h","76%",<Pill type="success">Good</Pill>],
-            ["Spanish","110","89%","7.4%","2.1h","71%",<Pill type="warning">Monitor</Pill>],
-            ["Other","23","84%","9.1%","2.4h","68%",<Pill type="warning">Monitor</Pill>],
-          ]}
-        />
+
+      <Card title="Access equity by language" source="Elation API — live">
+        {loading ? (
+          <div style={{padding:"20px",color:B.t3,fontSize:12,fontFamily:F}}>Loading...</div>
+        ) : (
+          <Tbl
+            headers={["Language","Visits","% of total","Avg lead time (days)","No-show rate"]}
+            rows={summaryRaw.map(s => [
+              langShort(s.lang),
+              s.visits,
+              `${s.pct}%`,
+              s.avgLeadTimeDays != null ? `${s.avgLeadTimeDays}d` : "—",
+              `${s.noShowRate}%`,
+            ])}
+          />
+        )}
       </Card>
     </div>
   );
@@ -638,45 +904,137 @@ function VLanguage() {
 
 // ─── Module 9: Clinician Performance ────────────────────────────────────────
 function VClinician() {
+  const { getToken } = useAuth();
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    apiGet("/api/elation/clinician-performance", getToken)
+      .then((d) => { if (!cancelled) { setData(d); setLoading(false); } })
+      .catch((e) => { if (!cancelled) { setError(e.message); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [getToken]);
+
+  const PH_COLORS  = [B.ch.g, B.ch.t, B.ch.a, B.g700, B.ch.s];
+
+  const physicians = (data?.byPhysician ?? []).filter(p => p.is_active);
+  const totalPh    = physicians.length;
+  const avgVisits  = data?.avgVisits ?? "—";
+  const topPh      = [...physicians].sort((a,b) => b.stats.total - a.stats.total)[0];
+
+  // Monthly trend: collect all months, sort, build dataset per physician
+  const allMonths = [...new Set(physicians.flatMap(p => Object.keys(p.stats.byMonth || {})))].sort();
+  const trendData = {
+    labels: allMonths.map(m => {
+      const [y, mo] = m.split("-");
+      return new Date(+y, +mo - 1).toLocaleString("en-US", { month:"short", year:"2-digit" });
+    }),
+    datasets: physicians.map((ph, i) => ({
+      label: ph.name,
+      data:  allMonths.map(m => ph.stats.byMonth?.[m] ?? 0),
+      borderColor:       PH_COLORS[i % PH_COLORS.length],
+      backgroundColor:   PH_COLORS[i % PH_COLORS.length],
+      tension: 0.4, pointRadius: 3,
+      pointBackgroundColor: PH_COLORS[i % PH_COLORS.length],
+      pointBorderColor: "#fff", pointBorderWidth: 2,
+    })),
+  };
+
+  // Performance table rows — metrics pre-calculated by transformer
+  const phRows = physicians.map((ph, i) => {
+    const s        = ph.stats;
+    const compPct  = s.completionRate   ?? 0;
+    const flag     = compPct >= 80 ? "success" : compPct >= 60 ? "warning" : "danger";
+    const flagLbl  = compPct >= 80 ? "Strong"  : compPct >= 60 ? "Review"  : "Low";
+    const abxLabel = s.antibioticRate != null ? `${s.antibioticRate}%` : "No Rx data";
+    return [
+      <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span style={{ width:8, height:8, borderRadius:"50%", background:PH_COLORS[i % PH_COLORS.length], flexShrink:0 }} />
+        {ph.name}
+      </span>,
+      ph.credentials || "—",
+      s.total,
+      `${compPct}%`,
+      `${s.cancellationRate ?? 0}%`,
+      `${s.noShowRate ?? 0}%`,
+      abxLabel,
+      <Pill type={flag}>{flagLbl}</Pill>,
+    ];
+  });
+
+  const phNames      = physicians.map(p => p.name.split(" ").slice(-1)[0]);
+  const compValues   = physicians.map(p => p.stats.completionRate   ?? 0);
+  const cancelValues = physicians.map(p => p.stats.cancellationRate ?? 0);
+
   return (
     <div>
       <SecHeader tag="Module 9 · Elation API · Internal" title="Clinician Performance" desc="Quality and consistency coaching — internal use only, not punitive." />
-      <Grid cols={4} mb={12}>
-        <KpiCard label="Total clinicians"      value="3"    subunit="Active this month"         accent={B.ch.g} />
-        <KpiCard label="Avg visits/clinician"  value="92"   subunit="per month"                 accent={B.ch.t} />
-        <KpiCard label="Avg re-contact rate"   value="9.1"  unit="%" trend="↓ Below 10% target" accent={B.ch.a} />
-        <KpiCard label="Avg satisfaction"      value="4.7"  unit="/5" trend="↑ Top decile"      accent={B.ch.g} />
-      </Grid>
-      <Card title="Visit volume per clinician — 6 months" source="Elation API" style={{marginBottom:12}}>
-        <Lgnd items={[{label:"Dr. Melo",color:B.ch.g},{label:"Dr. Santos",color:B.ch.t},{label:"NP Rivera",color:B.ch.a}]} />
-        <div style={{height:220}}><Line data={D.clinicVis} options={co()} /></div>
-      </Card>
-      <Card title="Clinician performance matrix" source="Elation API">
-        <Tbl
-          headers={["Clinician","Visits/mo","Re-contact %","ER escalation %","Antibiotic rate","Satisfaction","Flag"]}
-          rows={[
-            ["Dr. Andre Melo","188","8.2%","1.1%","12%","4.8/5",<Pill type="success">Optimal</Pill>],
-            ["Dr. C. Santos","130","9.8%","1.4%","15%","4.6/5",<Pill type="success">Good</Pill>],
-            ["NP M. Rivera","94","10.4%","2.1%","18%","4.5/5",<Pill type="warning">Coach</Pill>],
-          ]}
-        />
-      </Card>
-      <Card title="Quality metrics breakdown" source="Elation API" style={{marginTop:12}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,paddingTop:4}}>
-          <div>
-            <p style={{fontSize:12,fontWeight:600,color:B.t2,margin:"0 0 10px",fontFamily:F}}>Re-contact rate by clinician</p>
-            <Bar2 label="Dr. Melo"    value={8}  color={B.ch.g} />
-            <Bar2 label="Dr. Santos"  value={10} color={B.ch.t} />
-            <Bar2 label="NP Rivera"   value={10} color={B.ch.a} />
-          </div>
-          <div>
-            <p style={{fontSize:12,fontWeight:600,color:B.t2,margin:"0 0 10px",fontFamily:F}}>Patient satisfaction by clinician</p>
-            <Bar2 label="Dr. Melo"    value={96} color={B.ch.g} />
-            <Bar2 label="Dr. Santos"  value={92} color={B.ch.t} />
-            <Bar2 label="NP Rivera"   value={90} color={B.ch.a} />
-          </div>
+
+      {error && (
+        <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
+          Error loading data: {error}
         </div>
+      )}
+
+      <Grid cols={4}>
+        <KpiCard label="Active clinicians"    value={loading ? "…" : totalPh}                         subunit="in practice"           accent={B.ch.g} />
+        <KpiCard label="Avg visits/clinician" value={loading ? "…" : avgVisits}                       subunit="total period"          accent={B.ch.t} />
+        <KpiCard label="Top performer"        value={loading ? "…" : (topPh?.name.split(" ").at(-1) ?? "—")} subunit={`${topPh?.stats.total ?? 0} visits`} accent={B.ch.g} />
+        <KpiCard label="Total appointments"   value={loading ? "…" : (data?.total ?? "—")}            subunit="all clinicians"        accent={B.g700} />
+      </Grid>
+
+      <Card title="Visit volume per clinician — monthly trend" source="Elation API — live">
+        {loading ? (
+          <div style={{ height:220, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+        ) : allMonths.length === 0 ? (
+          <div style={{ height:220, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>No monthly data yet</div>
+        ) : (
+          <>
+            <Lgnd items={physicians.map((ph,i) => ({ label:ph.name, color:PH_COLORS[i % PH_COLORS.length] }))} />
+            <div style={{ height:220 }}><Line data={trendData} options={co()} /></div>
+          </>
+        )}
       </Card>
+
+      <Card title="Clinician performance matrix" source="Elation API — live" style={{ marginTop:12 }}>
+        {loading ? (
+          <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+        ) : (
+          <Tbl
+            headers={["Clinician","Credentials","Total visits","Completion %","Cancellation %","No-show %","Antibiotic Rx %","Status"]}
+            rows={phRows}
+          />
+        )}
+      </Card>
+
+      <Two style={{ marginTop:12 }}>
+        <Card title="Completion rate by clinician" source="Elation API — live">
+          {loading ? (
+            <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : (
+            <div>
+              {physicians.map((ph, i) => (
+                <Bar2 key={ph.id} label={phNames[i]} value={compValues[i]} color={PH_COLORS[i % PH_COLORS.length]} />
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card title="Cancellation rate by clinician" source="Elation API — live">
+          {loading ? (
+            <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : (
+            <div>
+              {physicians.map((ph, i) => (
+                <Bar2 key={ph.id} label={phNames[i]} value={cancelValues[i]} color={PH_COLORS[i % PH_COLORS.length]} />
+              ))}
+            </div>
+          )}
+        </Card>
+      </Two>
     </div>
   );
 }
@@ -726,46 +1084,128 @@ function VB2B() {
 
 // ─── Module 12: Compliance & Risk ───────────────────────────────────────────
 function VCompliance() {
+  const { getToken } = useAuth();
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    apiGet("/api/elation/compliance", getToken)
+      .then((d) => { if (!cancelled) { setData(d); setLoading(false); } })
+      .catch((e) => { if (!cancelled) { setError(e.message); setLoading(false); } });
+    return () => { cancelled = true; };
+  }, [getToken]);
+
+  const PH_COLORS = [B.ch.g, B.ch.t, B.ch.a, B.g700, B.ch.s];
+
+  const physicians   = (data?.byPhysician ?? []).filter(p => p.is_active);
+  const outliers     = data?.outliers     ?? [];
+  const docRate      = data?.docRate      ?? null;
+  const signedRate   = data?.signedRate   ?? null;
+  const totalNotes   = data?.totalNotes   ?? null;
+  const outlierCount = data?.outlierCount ?? 0;
+
+  // Scorecard bars — show 0 if null so the bar renders empty (not broken)
+  const scorecard = [
+    { label: "Follow-up documented %", value: docRate      ?? 0, color: docRate      != null ? (docRate      >= 80 ? B.ch.g : B.ch.a) : B.ch.s },
+    { label: "Visit notes signed %",   value: signedRate   ?? 0, color: signedRate   != null ? (signedRate   >= 90 ? B.ch.g : B.ch.a) : B.ch.s },
+  ];
+
+  // Clinician table rows
+  const phRows = physicians.map((ph, i) => {
+    const s        = ph.stats;
+    const flagType = s.noShowRate > 20 || s.cancelRate > 15 || (s.docRate != null && s.docRate < 80) ? "warning" : "success";
+    const flagLbl  = flagType === "warning" ? "Review" : "OK";
+    return [
+      <span key={ph.id} style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <span style={{ width:8, height:8, borderRadius:"50%", background:PH_COLORS[i % PH_COLORS.length], flexShrink:0 }} />
+        {ph.name}
+      </span>,
+      s.total,
+      s.completed,
+      `${s.noShowRate}%`,
+      `${s.cancelRate}%`,
+      s.docRate != null ? `${s.docRate}%` : "—",
+      <Pill type={flagType}>{flagLbl}</Pill>,
+    ];
+  });
+
+  // Outlier table rows
+  const outlierRows = outliers.map((o, i) => [
+    o.type,
+    o.physician,
+    `${o.value}${o.unit}`,
+    `> ${o.threshold}${o.unit} threshold`,
+    <Pill key={i} type="warning">Review</Pill>,
+  ]);
+
   return (
     <div>
-      <SecHeader tag="Module 12 · Elation API · HIPAA" title="Compliance & Risk" desc="Sleep at night. HIPAA audit readiness and outlier detection." />
+      <SecHeader title="Compliance & Risk" />
+
+      {error && (
+        <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
+          Error loading data: {error}
+        </div>
+      )}
+
       <Grid cols={4} mb={12}>
-        <KpiCard label="Consent completion"      value="99.1"  unit="%" trend="↑ Above 99% threshold" accent={B.ch.g} />
-        <KpiCard label="Follow-up docs rate"     value="96.4"  unit="%" trend="↑ +1.2pts MTD"         accent={B.ch.t} />
-        <KpiCard label="Audit trail complete"    value="100"   unit="%" trend="↑ Full coverage"        accent={B.ch.g} />
-        <KpiCard label="Open outlier flags"      value="2"     trend="↓ Below threshold"              accent={B.ch.a} />
+        <KpiCard label="Follow-up documented"  value={loading ? "…" : (docRate    != null ? docRate    : "—")} unit={docRate    != null ? "%" : ""} subunit="completed appts" accent={B.ch.g} />
+        <KpiCard label="Visit notes signed"    value={loading ? "…" : (signedRate != null ? signedRate : "—")} unit={signedRate != null ? "%" : ""} subunit="of all notes"    accent={B.ch.t} />
+        <KpiCard label="Total visit notes"     value={loading ? "…" : (totalNotes != null ? totalNotes : "—")} subunit="in period"                                            accent={B.g700} />
+        <KpiCard label="Open outlier flags"    value={loading ? "…" : outlierCount} subunit="active clinicians" accent={outlierCount > 0 ? B.ch.a : B.ch.g} />
       </Grid>
+
       <Two>
-        <Card title="Compliance scorecard" source="Elation API">
-          <div style={{paddingTop:6}}>
-            <Bar2 label="Telehealth consent %"    value={99} color={B.ch.g} />
-            <Bar2 label="Follow-up documented %"  value={96} color={B.ch.g} />
-            <Bar2 label="Audit trail complete %"  value={100} color={B.g700} />
-            <Bar2 label="State coverage match %"  value={100} color={B.g700} />
-          </div>
+        <Card title="Compliance scorecard" source="Elation API — live">
+          {loading ? (
+            <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : (
+            <div style={{ paddingTop:6 }}>
+              {scorecard.map(m => (
+                <Bar2 key={m.label} label={m.label} value={m.value} color={m.color} />
+              ))}
+              <p style={{ fontSize:11, color:B.t3, marginTop:12, fontFamily:F, lineHeight:1.6 }}>
+                Documentation rate measures completed appointments with a linked visit note.<br />
+                Signing rate measures visit notes marked as signed in Elation.
+              </p>
+            </div>
+          )}
         </Card>
-        <Card title="State licensure vs visit volume" source="Elation API">
-          <Tbl
-            headers={["State","Visits MTD","Clinicians licensed","Coverage"]}
-            rows={[
-              ["Florida","412","3",<Pill type="success">Covered</Pill>],
-              ["Texas","178","2",<Pill type="success">Covered</Pill>],
-              ["New York","96","1",<Pill type="warning">Monitor</Pill>],
-              ["California","50","1",<Pill type="warning">Monitor</Pill>],
-            ]}
-          />
+
+        <Card title="Outlier detection & flags" source="Elation API — live">
+          {loading ? (
+            <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+          ) : outliers.length === 0 ? (
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"32px 0", gap:8 }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={B.ch.g} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
+              </svg>
+              <span style={{ fontSize:12, color:B.t3, fontFamily:F }}>No outliers detected in this period</span>
+            </div>
+          ) : (
+            <Tbl
+              headers={["Flag type","Clinician","Value","Benchmark","Action"]}
+              rows={outlierRows}
+            />
+          )}
         </Card>
       </Two>
-      <Card title="Outlier detection & flags" source="Elation API" style={{marginTop:12}}>
-        <Tbl
-          headers={["Flag","Type","Clinician","Date","Status","Action"]}
-          rows={[
-            ["High re-contact (>15%)","Clinical outlier","NP Rivera","Mar 14","Open",<Pill type="warning">Review</Pill>],
-            ["Missing follow-up note","Documentation","Dr. Santos","Mar 10","Open",<Pill type="warning">Complete</Pill>],
-            ["Consent not recorded","Compliance","—","Mar 8","Resolved",<Pill type="success">Closed</Pill>],
-            ["State coverage gap (GA)","Licensure","—","Mar 1","Resolved",<Pill type="success">Closed</Pill>],
-          ]}
-        />
+
+      <Card title="Clinician compliance breakdown" source="Elation API — live" style={{ marginTop:12 }}>
+        {loading ? (
+          <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
+        ) : physicians.length === 0 ? (
+          <div style={{ padding:16, color:B.t3, fontSize:12, fontFamily:F }}>No clinician data available for this period.</div>
+        ) : (
+          <Tbl
+            headers={["Clinician","Total visits","Completed","No-show %","Cancel %","Doc rate","Status"]}
+            rows={phRows}
+          />
+        )}
       </Card>
     </div>
   );
@@ -774,12 +1214,15 @@ function VCompliance() {
 // ─── User footer ─────────────────────────────────────────────────────────────
 function UserFooter({ clock }) {
   const { signOut } = useClerk();
+  const { user } = useUser();
+  const fullName = user?.fullName || user?.firstName || user?.emailAddresses?.[0]?.emailAddress || "";
+  const initials = fullName.split(" ").filter(Boolean).slice(0,2).map((w) => w[0].toUpperCase()).join("");
   return (
     <div style={{ padding:"10px 14px", borderTop:`1px solid ${B.border}`, flexShrink:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", borderRadius:8, background:B.bg }}>
-        <div style={{ width:28, height:28, borderRadius:"50%", background:B.g500, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#fff", fontFamily:F, flexShrink:0 }}>AM</div>
+        <div style={{ width:28, height:28, borderRadius:"50%", background:B.g500, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#fff", fontFamily:F, flexShrink:0 }}>{initials || "?"}</div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:12, fontWeight:600, color:B.t1, fontFamily:F, lineHeight:1.2 }}>Dr. Andre Melo</div>
+          <div style={{ fontSize:12, fontWeight:600, color:B.t1, fontFamily:F, lineHeight:1.2 }}>{fullName || "—"}</div>
           <div style={{ fontSize:10, color:B.t3, fontFamily:F }}>Admin</div>
         </div>
         <button
@@ -809,26 +1252,26 @@ const NAV = [
   { group:"Clinical", items:[
     { id:"overview",  label:"Overview",     leaf:true,  component:VOverview },
     { id:"clinical-g",label:"Clinical",     leaf:false, subs:[
-      { id:"visits",     label:"Visit Volume",       priority:true,  component:VVisits },
-      { id:"access",     label:"Access & Speed",     priority:true,  component:VAccess },
-      { id:"outcomes",   label:"Clinical Outcomes",  priority:true,  component:VOutcomes },
-      { id:"experience", label:"Patient Experience", priority:true,  component:VExperience },
+      { id:"visits",     label:"Visit Volume",       priority:true,  live:true,  component:VVisits },
+      { id:"access",     label:"Access & Speed",     priority:true,  live:true,  component:VAccess },
+      { id:"outcomes",   label:"Clinical Outcomes",  priority:true,             component:VOutcomes },
+      { id:"experience", label:"Patient Experience", priority:true,             component:VExperience },
     ]},
     { id:"members-g", label:"Members & Revenue", leaf:false, subs:[
       { id:"membership", label:"Membership",  priority:true,  component:VMembership },
       { id:"revenue",    label:"Revenue",     priority:false, component:VRevenue },
     ]},
     { id:"ops-g",     label:"Operations",   leaf:false, subs:[
-      { id:"operations", label:"Support Load",      priority:true,  component:VOperations },
-      { id:"clinician",  label:"Clinician",         priority:false, component:VClinician },
-      { id:"compliance", label:"Compliance & Risk", priority:false, component:VCompliance },
+      { id:"operations", label:"Support Load",      priority:true,             component:VOperations },
+      { id:"clinician",  label:"Clinician",         priority:false, live:true,  component:VClinician },
+      { id:"compliance", label:"Compliance & Risk", priority:false, live:true,  component:VCompliance },
     ]},
   ]},
   { group:"Growth", items:[
     { id:"growth-g",  label:"Growth & B2B", leaf:false, subs:[
-      { id:"growth",   label:"Growth & Funnel",   priority:false, component:VGrowth },
-      { id:"b2b",      label:"B2B / Employer",    priority:false, component:VB2B },
-      { id:"language", label:"Language & Equity", priority:false, component:VLanguage },
+      { id:"growth",   label:"Growth & Funnel",   priority:false,            component:VGrowth },
+      { id:"b2b",      label:"B2B / Employer",    priority:false,            component:VB2B },
+      { id:"language", label:"Language & Equity", priority:false, live:true, component:VLanguage },
     ]},
   ]},
 ];
@@ -847,6 +1290,12 @@ function SubItem({ item, active, onClick }) {
     <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", padding:"5px 12px 5px 28px", background:active?B.g50:hov?"#F9FBF9":"transparent", border:"none", cursor:"pointer", textAlign:"left", borderLeft:active?`2px solid ${B.g500}`:"2px solid transparent", transition:"all 0.1s" }}>
       <span style={{ fontSize:12, fontWeight:active?600:400, color:active?B.g700:B.t2, fontFamily:F }}>{item.label}</span>
+      {item.live && (
+        <span style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, color:B.g600, letterSpacing:"0.04em", fontFamily:F, textTransform:"uppercase", background:B.g100, borderRadius:10, padding:"1px 5px", flexShrink:0 }}>
+          <span style={{ width:4, height:4, borderRadius:"50%", background:B.g500, animation:"pulse 2s infinite" }} />
+          live
+        </span>
+      )}
     </button>
   );
 }
@@ -942,7 +1391,7 @@ export default function ViaJourneyDashboard() {
             </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 10px", border:`1px solid ${B.border}`, borderRadius:8, background:B.bg }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"#22C55E" }} />
-            <span style={{ fontSize:11, fontWeight:500, color:B.t2, fontFamily:F }}>Week of Mar 9–13, 2026</span>
+            <span style={{ fontSize:11, fontWeight:500, color:B.t2, fontFamily:F }}>Live</span>
           </div>
         </header>
 
