@@ -26,19 +26,6 @@ function SectionLabel({ children }) {
   );
 }
 
-function SysBadge({ live, system }) {
-  if (live) return (
-    <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:9, fontWeight:700, color:B.g600, letterSpacing:"0.04em", fontFamily:F, textTransform:"uppercase", background:B.g100, borderRadius:10, padding:"2px 6px", flexShrink:0 }}>
-      <span style={{ width:4, height:4, borderRadius:"50%", background:B.g500, animation:"pulse 2s infinite", flexShrink:0 }} />
-      live
-    </span>
-  );
-  return (
-    <span style={{ display:"inline-flex", alignItems:"center", fontSize:9, fontWeight:600, color:B.t3, letterSpacing:"0.03em", fontFamily:F, background:B.bg, borderRadius:10, padding:"2px 7px", border:`1px solid ${B.border}`, flexShrink:0, whiteSpace:"nowrap" }}>
-      Needs {system}
-    </span>
-  );
-}
 
 // Big primary KPI number
 function KPI({ value, unit, label, color, dim }) {
@@ -180,10 +167,10 @@ export default function VOverview() {
   // ── Hero ─────────────────────────────────────────────────────────────────
   const L = loading ? "…" : undefined;
   const heroKpis = [
-    { label:"Total appointments", value: L ?? totalAppts,  unit: undefined,    trend:"Elation — live" },
-    { label:"Same-day rate",      value: L ?? sameDayRate, unit: L ? "" : "%", trend:"booked & seen same day" },
-    { label:"Active members",     value: "—",              unit: undefined,    trend:"Needs Hint API" },
-    { label:"Satisfaction",       value: "—",              unit: "/5",         trend:"Needs patient forms" },
+    { label:"Total appointments", value: L ?? totalAppts,  unit: undefined    },
+    { label:"Same-day rate",      value: L ?? sameDayRate, unit: L ? "" : "%" },
+    { label:"Active members",     value: "—",              unit: undefined    },
+    { label:"Satisfaction",       value: "—",              unit: "/5"         },
   ];
 
   return (
@@ -196,12 +183,10 @@ export default function VOverview() {
         </div>
       )}
 
-      {/* ── Live — Elation EHR ─────────────────────────────────────────────── */}
-      <SectionLabel>Elation EHR — Live</SectionLabel>
       <Grid cols={3} mb={12}>
 
         {/* Visit Volume */}
-        <Card title="Visit Volume" badge={<SysBadge live />}>
+        <Card title="Visit Volume">
           {loading ? spinner(180) : <>
             <KPI value={totalAppts} label="total appointments" color={B.ch.g} />
             {dayValues.length > 0 && (
@@ -217,7 +202,7 @@ export default function VOverview() {
         </Card>
 
         {/* Access & Speed */}
-        <Card title="Access & Speed" badge={<SysBadge live />}>
+        <Card title="Access & Speed">
           {loading ? spinner(180) : <>
             <KPI value={sameDayRate} unit="%" label="same-day rate" color={B.ch.g} />
             <PBar label="Same-day"    value={sameDayRate} color={B.ch.g} />
@@ -230,7 +215,7 @@ export default function VOverview() {
         </Card>
 
         {/* Language & Equity */}
-        <Card title="Language & Equity" badge={<SysBadge live />}>
+        <Card title="Language & Equity">
           {loading ? spinner(180) : (() => {
             const top = langSummary.filter(s => s.visits > 0).sort((a,b)=>b.pct-a.pct)[0];
             return <>
@@ -245,7 +230,7 @@ export default function VOverview() {
         </Card>
 
         {/* Clinician Performance */}
-        <Card title="Clinician Performance" badge={<SysBadge live />}>
+        <Card title="Clinician Performance">
           {loading ? spinner(180) : <>
             <KPI value={activePh} label="active clinicians" color={B.ch.g} />
             {phValues.length > 0 && (
@@ -261,7 +246,7 @@ export default function VOverview() {
         </Card>
 
         {/* Compliance & Risk */}
-        <Card title="Compliance & Risk" badge={<SysBadge live />}>
+        <Card title="Compliance & Risk">
           {loading ? spinner(180) : <>
             <KPI value={docRate} unit="%" label="documentation rate" color={docRate >= 90 ? B.ch.g : B.ch.a} />
             <PBar label="Documented" value={docRate}    color={B.ch.g} />
@@ -278,7 +263,7 @@ export default function VOverview() {
       {/* ── Hour & Day trend charts ────────────────────────────────────────── */}
       <SectionLabel>Appointment Trends</SectionLabel>
       <Two mb={12}>
-        <Card title="By hour of day" source="Elation — live">
+        <Card title="By hour of day">
           {loading || hourValues.length === 0 ? spinner(160) : (
             <div style={{ height:160 }}>
               <Bar data={{ labels:hourLabels, datasets:[{ data:hourValues, backgroundColor:hourColors, borderRadius:4 }] }}
@@ -286,7 +271,7 @@ export default function VOverview() {
             </div>
           )}
         </Card>
-        <Card title="By day of week" source="Elation — live">
+        <Card title="By day of week">
           {loading || dayValues.length === 0 ? spinner(160) : (
             <div style={{ height:160 }}>
               <Bar data={{ labels:dayLabels, datasets:[{ data:dayValues, backgroundColor:dayColors, borderRadius:4 }] }}
@@ -296,53 +281,53 @@ export default function VOverview() {
         </Card>
       </Two>
 
-      {/* ── Pending integrations ──────────────────────────────────────────── */}
-      <SectionLabel>Pending Integrations</SectionLabel>
+      {/* ── Pending ───────────────────────────────────────────────────────── */}
+      <SectionLabel>Coming Soon</SectionLabel>
       <Grid cols={3} mb={0}>
 
-        <Card title="Clinical Outcomes" badge={<SysBadge system="Patient Forms" />}>
+        <Card title="Clinical Outcomes">
           <KPI value="—" label="ER / UC avoidance rate" dim />
           <Metric label="Resolved at 7 days"  value="—" unit="%" />
           <Metric label="Worsening rate"       value="—" unit="%" />
           <Metric label="Re-visit same issue"  value="—" unit="%" />
         </Card>
 
-        <Card title="Patient Experience" badge={<SysBadge system="Patient Forms" />}>
+        <Card title="Patient Experience">
           <KPI value="—" unit="/5" label="satisfaction score (48h)" dim />
           <Metric label="Would recommend"   value="—" unit="%" />
           <Metric label="Complaints / 100"  value="—" />
           <Metric label="Repeat usage rate" value="—" unit="%" />
         </Card>
 
-        <Card title="Membership" badge={<SysBadge system="Hint API" />}>
+        <Card title="Membership">
           <KPI value="—" label="active members" dim />
           <Metric label="New members (MTD)"    value="—" />
           <Metric label="Monthly churn"        value="—" unit="%" />
           <Metric label="Avg tenure"           value="—" unit="mo" />
         </Card>
 
-        <Card title="Revenue" badge={<SysBadge system="Hint API" />}>
+        <Card title="Revenue">
           <KPI value="—" label="revenue MTD" dim />
           <Metric label="Revenue per patient" value="—" />
           <Metric label="Failed payment rate" value="—" unit="%" />
           <Metric label="Refund rate"         value="—" unit="%" />
         </Card>
 
-        <Card title="Operations & Support" badge={<SysBadge system="RingCentral + GHL" />}>
+        <Card title="Operations & Support">
           <KPI value="—" unit="min" label="avg response time" dim />
           <Metric label="Follow-up completion" value="—" unit="%" />
           <Metric label="Messages per visit"   value="—" />
           <Metric label="Calls per visit"      value="—" />
         </Card>
 
-        <Card title="Growth & Funnel" badge={<SysBadge system="GoHighLevel" />}>
+        <Card title="Growth & Funnel">
           <KPI value="—" label="total leads MTD" dim />
           <Metric label="Lead → booked"      value="—" unit="%" />
           <Metric label="Lead → member"      value="—" unit="%" />
           <Metric label="Self-schedule rate" value="—" unit="%" />
         </Card>
 
-        <Card title="B2B / Employer" badge={<SysBadge system="Elation + Forms" />}>
+        <Card title="B2B / Employer">
           <KPI value="—" label="active contracts" dim />
           <Metric label="Covered lives"    value="—" />
           <Metric label="ER avoidance avg" value="—" unit="%" />
