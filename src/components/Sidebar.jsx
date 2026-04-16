@@ -32,7 +32,7 @@ const NAV = [
       { id:"revenue",    label:"Revenue",     priority:false, component:VRevenue },
     ]},
     { id:"ops-g",     label:"Operations",   leaf:false, subs:[
-      { id:"operations", label:"Support Load",      priority:true,             component:VOperations },
+      { id:"operations", label:"Support Load",      priority:true,  live:true, component:VOperations },
       { id:"clinician",  label:"Clinician",         priority:false, live:true,  component:VClinician },
       { id:"compliance", label:"Compliance & Risk", priority:false, live:true,  component:VCompliance },
     ]},
