@@ -75,7 +75,7 @@ export default function App() {
               Clinical<br />Dashboard
             </h1>
             <p style={{ fontSize:14, color:'rgba(255,255,255,0.55)', maxWidth:300, lineHeight:1.75, margin:'0 0 52px' }}>
-              Visibilidade clínica completa para equipes de saúde primária, em tempo real.
+              Complete clinical visibility for primary care teams, in real time.
             </p>
 
             {/* Bottom tagline */}
@@ -105,10 +105,10 @@ export default function App() {
             {/* Login heading (above Clerk widget) */}
             <div style={{ width:'100%', maxWidth:360, marginBottom:8 }}>
               <h2 style={{ fontSize:22, fontWeight:700, color:B.t1, letterSpacing:'-0.02em', marginBottom:6 }}>
-                Bem-vindo de volta
+                Welcome back
               </h2>
               <p style={{ fontSize:13, color:B.t3, lineHeight:1.6 }}>
-                Acesse sua conta para continuar
+                Sign in to your account to continue
               </p>
             </div>
 

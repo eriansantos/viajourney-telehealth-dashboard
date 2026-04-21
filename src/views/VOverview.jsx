@@ -94,8 +94,6 @@ export default function VOverview() {
   const [data, setData]           = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [countdown, setCountdown] = useState(REFRESH_MS / 1000);
   const cancelledRef = useRef(false);
 
   const fetchAll = useCallback(async (isInitial = false) => {
@@ -112,9 +110,7 @@ export default function VOverview() {
         ]);
       if (!cancelledRef.current) {
         setData({ visitVolume, speedToCare, languageEquity, clinicianPerf, compliance });
-        setLastUpdated(new Date());
         setLoading(false);
-        setCountdown(REFRESH_MS / 1000);
       }
     } catch (e) {
       if (!cancelledRef.current) { setError(e.message); setLoading(false); }
@@ -129,13 +125,6 @@ export default function VOverview() {
     return () => { cancelledRef.current = true; clearInterval(interval); };
   }, [fetchAll]);
 
-  // ── Countdown visual (decrementa a cada 1s) ───────────────────────────────
-  useEffect(() => {
-    const tick = setInterval(() => {
-      setCountdown(c => (c <= 1 ? REFRESH_MS / 1000 : c - 1));
-    }, 1000);
-    return () => clearInterval(tick);
-  }, []);
 
   // ── Derived values ──────────────────────────────────────────────────────
   const vv = data?.visitVolume;
@@ -200,34 +189,9 @@ export default function VOverview() {
     { label:"Satisfaction",       value: "—",              unit: "/5"         },
   ];
 
-  // ── Formata hora da última atualização ───────────────────────────────────
-  const updatedStr = lastUpdated
-    ? lastUpdated.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit" })
-    : null;
-
   return (
     <div>
       <Hero kpis={heroKpis} />
-
-      {/* ── Barra de status de atualização ─────────────────────────────────── */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:10, marginBottom:10 }}>
-        {updatedStr && (
-          <span style={{ fontSize:10, color:B.t4, fontFamily:F }}>
-            Atualizado às {updatedStr}
-          </span>
-        )}
-        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-          <div style={{ position:"relative", width:28, height:4, background:B.border, borderRadius:2, overflow:"hidden" }}>
-            <div style={{
-              position:"absolute", left:0, top:0, height:"100%", borderRadius:2,
-              background: B.ch.g,
-              width:`${(countdown / (REFRESH_MS / 1000)) * 100}%`,
-              transition:"width 1s linear",
-            }} />
-          </div>
-          <span style={{ fontSize:10, color:B.t4, fontFamily:F, width:14 }}>{countdown}s</span>
-        </div>
-      </div>
 
       {error && (
         <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
