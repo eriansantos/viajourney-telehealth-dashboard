@@ -5,7 +5,7 @@ import HeroKpi from "./atoms/HeroKpi.jsx";
 const MOCK_KPIS = [
   { label: "Visits this week",  value: "…", unit: undefined, trend: undefined },
   { label: "ER/UC avoidance",   value: "—", unit: "%",       trend: "Needs patient forms" },
-  { label: "Active members",    value: "—", unit: undefined, trend: "Needs Hint API" },
+  { label: "Active members",    value: "—", unit: undefined, trend: undefined },
   { label: "Satisfaction",      value: "—", unit: "/5",      trend: "Needs patient forms" },
 ];
 

@@ -14,7 +14,7 @@ import Tbl from "../components/atoms/Tbl.jsx";
 export default function VGrowth() {
   return (
     <div>
-      <SecHeader tag="Module 1 · GoHighLevel CRM" title="Growth & Funnel" desc="Are people finding you, booking, and converting?" />
+      <SecHeader tag="Module 1" title="Growth & Funnel" desc="Are people finding you, booking, and converting?" />
       <Grid cols={4} mb={12}>
         <KpiCard label="Total leads (MTD)"        value="312"  trend="↑ +18% vs last month"    accent={B.ch.g} />
         <KpiCard label="Lead → booked"            value="37"   unit="%" trend="↑ +2pts vs last month" accent={B.ch.t} />
@@ -27,16 +27,16 @@ export default function VGrowth() {
         <KpiCard label="Self-schedule rate"       value="68"   unit="%" trend="↑ +5pts"           accent={B.ch.g} />
       </Grid>
       <Two>
-        <Card title="Leads by source" source="GoHighLevel API">
+        <Card title="Leads by source">
           <Lgnd items={[{label:"Website",color:B.ch.g},{label:"WhatsApp",color:B.ch.t},{label:"Referral",color:B.ch.a},{label:"Employer",color:B.g700}]} />
           <div style={{height:210}}><Bar data={D.leadSrc} options={co()} /></div>
         </Card>
-        <Card title="Conversion rate trend — 6 months" source="GoHighLevel API">
+        <Card title="Conversion rate trend — 6 months">
           <Lgnd items={[{label:"Lead → Member %",color:B.ch.g},{label:"Lead → Booked %",color:B.ch.t}]} />
           <div style={{height:210}}><Line data={D.convTrend} options={co()} /></div>
         </Card>
       </Two>
-      <Card title="Conversion by language & state" source="GoHighLevel API">
+      <Card title="Conversion by language & state">
         <Tbl
           headers={["Segment","Leads","Booked %","Paid Visit %","Member %","Status"]}
           rows={[

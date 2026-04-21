@@ -11,14 +11,14 @@ import Tbl from "../components/atoms/Tbl.jsx";
 export default function VB2B() {
   return (
     <div>
-      <SecHeader tag="Module 11 · Elation + Forms" title="B2B / Employer Dashboards" desc="Sell and retain employer contracts with data-driven impact reports." />
+      <SecHeader tag="Module 11" title="B2B / Employer Dashboards" desc="Sell and retain employer contracts with data-driven impact reports." />
       <Grid cols={4} mb={12}>
         <KpiCard label="Active employer contracts" value="3"    trend="+ 1 in pipeline"            accent={B.ch.g} />
         <KpiCard label="Total covered lives"       value="284"  trend="↑ +42 this quarter"         accent={B.ch.t} />
         <KpiCard label="Avg visits / 100 members"  value="24.6" subunit="per month"                accent={B.ch.a} />
         <KpiCard label="Avg ER/UC avoidance"       value="76"   unit="%" trend="↑ +4pts vs Q4"     accent={B.ch.g} />
       </Grid>
-      <Card title="Employer contract summary" source="Elation API + Patient Forms" style={{marginBottom:12}}>
+      <Card title="Employer contract summary" style={{marginBottom:12}}>
         <Tbl
           headers={["Employer","Covered lives","Visits/100","Time-to-care","ER avoidance","Satisfaction","Est. cost savings"]}
           rows={[
@@ -29,7 +29,7 @@ export default function VB2B() {
         />
       </Card>
       <Two>
-        <Card title="ER/UC avoidance by employer" source="Elation API">
+        <Card title="ER/UC avoidance by employer">
           <div style={{paddingTop:6}}>
             <Bar2 label="BrazilianUS Corp" value={79} color={B.ch.g} />
             <Bar2 label="LKR Construction" value={74} color={B.ch.t} />

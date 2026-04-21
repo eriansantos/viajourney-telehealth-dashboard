@@ -100,7 +100,7 @@ export default function VVisits() {
       )}
 
       <Grid cols={4}>
-        <KpiCard label="Total appointments"   value={loading ? "…" : total}         trend={loading ? "" : "Elation live"} accent={B.ch.g} />
+        <KpiCard label="Total appointments"   value={loading ? "…" : total}         accent={B.ch.g} />
         <KpiCard label="Visits per clinician" value={loading ? "…" : perClinician}  subunit="per active clinician"        accent={B.ch.t} />
         <KpiCard label="Telehealth (video)"   value={loading ? "…" : `${videoPct}`} unit="%"                              accent={B.ch.a} />
         <KpiCard label="Active clinicians"    value={loading ? "…" : activePh}      subunit="in practice"                 accent={B.g700} />
@@ -113,7 +113,7 @@ export default function VVisits() {
       </Grid>
 
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:12 }}>
-        <Card title="Visits by type" source="Elation API — live">
+        <Card title="Visits by type">
           {loading ? (
             <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -135,7 +135,7 @@ export default function VVisits() {
           )}
         </Card>
 
-        <Card title="Appointments by mode" source="Elation API — live">
+        <Card title="Appointments by mode">
           {loading ? (
             <div style={{ height:210, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -154,7 +154,7 @@ export default function VVisits() {
           )}
         </Card>
 
-        <Card title="Status overview" source="Elation API — live">
+        <Card title="Status overview">
           {loading ? (
             <div style={{ height:234, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -177,7 +177,7 @@ export default function VVisits() {
         </Card>
       </div>
 
-      <Card title="Status funnel" source="Elation API — live">
+      <Card title="Status funnel">
         {loading ? (
           <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : (
@@ -191,7 +191,7 @@ export default function VVisits() {
       </Card>
 
       <Two>
-        <Card title="Appointments by hour" source="Elation API — live">
+        <Card title="Appointments by hour">
           {loading ? (
             <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -201,7 +201,7 @@ export default function VVisits() {
           )}
         </Card>
 
-        <Card title="Appointments by day of week" source="Elation API — live">
+        <Card title="Appointments by day of week">
           {loading ? (
             <div style={{ height:200, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -212,7 +212,7 @@ export default function VVisits() {
         </Card>
       </Two>
 
-      <Card title="Active clinicians" source="Elation API — live">
+      <Card title="Active clinicians">
         {loading ? (
           <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : (

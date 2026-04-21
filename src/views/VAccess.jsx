@@ -40,7 +40,7 @@ export default function VAccess() {
 
   return (
     <div>
-      <SecHeader tag="Module 3 · Priority · Elation API" title="Access & Speed-to-Care" />
+      <SecHeader tag="Module 3 · Priority" title="Access & Speed-to-Care" />
 
       {error && (
         <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
@@ -60,7 +60,7 @@ export default function VAccess() {
         <KpiCard label="Total appointments"       value={loading ? "…" : (data?.total ?? "—")}                    subunit="in selected period"  accent={B.g700} />
       </Grid>
 
-      <Card title="Booking lead time distribution" source="Elation API — live">
+      <Card title="Booking lead time distribution">
         {loading ? (
           <div style={{ height:220, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : (

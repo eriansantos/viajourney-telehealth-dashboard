@@ -14,7 +14,7 @@ import Tbl from "../components/atoms/Tbl.jsx";
 export default function VRevenue() {
   return (
     <div>
-      <SecHeader tag="Module 6 · Elation + Hint API" title="Revenue & Financial Health" desc="Know if growth is profitable." />
+      <SecHeader tag="Module 6" title="Revenue & Financial Health" desc="Know if growth is profitable." />
       <Grid cols={4} mb={12}>
         <KpiCard label="Revenue (MTD)"          value="$81.6" unit="k" trend="↑ +10% vs last month" accent={B.ch.g} />
         <KpiCard label="Revenue per patient"    value="$218"  trend="↑ +$14 vs last month"          accent={B.ch.t} />
@@ -27,7 +27,7 @@ export default function VRevenue() {
         <KpiCard label="Chargeback rate"        value="0.2"   unit="%" trend="↓ Excellent"          accent={B.ch.t} />
       </Grid>
       <Two>
-        <Card title="Revenue by plan type" source="Hint API">
+        <Card title="Revenue by plan type">
           <Lgnd items={[{label:"Standard Member 44%",color:B.ch.g},{label:"Concierge 28%",color:B.ch.t},{label:"One-time 18%",color:B.ch.a},{label:"Employer 10%",color:B.g700}]} />
           <div style={{height:200,display:"flex",alignItems:"center",justifyContent:"center"}}>
             <div style={{position:"relative",width:180,height:180}}>
@@ -39,11 +39,11 @@ export default function VRevenue() {
             </div>
           </div>
         </Card>
-        <Card title="Revenue trend — 6 months" source="Elation + Hint API">
+        <Card title="Revenue trend — 6 months">
           <div style={{height:220}}><Line data={D.revTrend} options={co({scales:{...co().scales,y:{...co().scales.y,ticks:{...co().scales.y.ticks,callback:v=>"$"+(v/1000).toFixed(0)+"k"}}}})} /></div>
         </Card>
       </Two>
-      <Card title="Revenue by plan — detail" source="Elation + Hint API">
+      <Card title="Revenue by plan — detail">
         <Tbl
           headers={["Plan","Revenue MTD","Revenue/patient","Patients","Failed payments","Status"]}
           rows={[

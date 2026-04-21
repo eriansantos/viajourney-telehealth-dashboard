@@ -88,7 +88,7 @@ export default function VCompliance() {
       </Grid>
 
       <Two>
-        <Card title="Compliance scorecard" source="Elation API — live">
+        <Card title="Compliance scorecard">
           {loading ? (
             <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -98,13 +98,13 @@ export default function VCompliance() {
               ))}
               <p style={{ fontSize:11, color:B.t3, marginTop:12, fontFamily:F, lineHeight:1.6 }}>
                 Documentation rate measures completed appointments with a linked visit note.<br />
-                Signing rate measures visit notes marked as signed in Elation.
+                Signing rate measures visit notes marked as signed in the system.
               </p>
             </div>
           )}
         </Card>
 
-        <Card title="Outlier detection & flags" source="Elation API — live">
+        <Card title="Outlier detection & flags">
           {loading ? (
             <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : outliers.length === 0 ? (
@@ -123,7 +123,7 @@ export default function VCompliance() {
         </Card>
       </Two>
 
-      <Card title="Clinician compliance breakdown" source="Elation API — live" style={{ marginTop:12 }}>
+      <Card title="Clinician compliance breakdown" style={{ marginTop:12 }}>
         {loading ? (
           <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : physicians.length === 0 ? (

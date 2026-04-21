@@ -80,7 +80,7 @@ export default function App() {
 
             {/* Bottom tagline */}
             <div style={{ position:'absolute', bottom:28, left:56, fontSize:10, color:'rgba(255,255,255,0.25)', letterSpacing:'0.10em', textTransform:'uppercase' }}>
-              Powered by Elation EHR
+              ViaJourney Telehealth
             </div>
           </div>
 

@@ -83,7 +83,7 @@ export default function VClinician() {
 
   return (
     <div>
-      <SecHeader tag="Module 9 · Elation API · Internal" title="Clinician Performance" desc="Quality and consistency coaching — internal use only, not punitive." />
+      <SecHeader tag="Module 9 · Internal" title="Clinician Performance" desc="Quality and consistency coaching — internal use only, not punitive." />
 
       {error && (
         <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
@@ -98,7 +98,7 @@ export default function VClinician() {
         <KpiCard label="Total appointments"   value={loading ? "…" : (data?.total ?? "—")}            subunit="all clinicians"        accent={B.g700} />
       </Grid>
 
-      <Card title="Visit volume per clinician — monthly trend" source="Elation API — live">
+      <Card title="Visit volume per clinician — monthly trend">
         {loading ? (
           <div style={{ height:220, display:"flex", alignItems:"center", justifyContent:"center", color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : allMonths.length === 0 ? (
@@ -111,7 +111,7 @@ export default function VClinician() {
         )}
       </Card>
 
-      <Card title="Clinician performance matrix" source="Elation API — live" style={{ marginTop:12 }}>
+      <Card title="Clinician performance matrix" style={{ marginTop:12 }}>
         {loading ? (
           <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
         ) : (
@@ -123,7 +123,7 @@ export default function VClinician() {
       </Card>
 
       <Two style={{ marginTop:12 }}>
-        <Card title="Completion rate by clinician" source="Elation API — live">
+        <Card title="Completion rate by clinician">
           {loading ? (
             <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (
@@ -134,7 +134,7 @@ export default function VClinician() {
             </div>
           )}
         </Card>
-        <Card title="Cancellation rate by clinician" source="Elation API — live">
+        <Card title="Cancellation rate by clinician">
           {loading ? (
             <div style={{ padding:12, color:B.t3, fontSize:12, fontFamily:F }}>Loading...</div>
           ) : (

@@ -66,7 +66,7 @@ export default function VLanguage() {
 
   return (
     <div>
-      <SecHeader tag="Module 8 · Elation API" title="Language, Access & Equity" />
+      <SecHeader tag="Module 8" title="Language, Access & Equity" />
 
       {error && (
         <div style={{ padding:"10px 14px", marginBottom:12, borderRadius:8, background:B.negBg, color:B.neg, fontSize:12, fontFamily:F }}>
@@ -87,7 +87,7 @@ export default function VLanguage() {
       </Grid>
 
       <Two>
-        <Card title="Visit distribution by language" source="Elation API — live">
+        <Card title="Visit distribution by language">
           {loading ? (
             <div style={{height:210,display:"flex",alignItems:"center",justifyContent:"center",color:B.t3,fontSize:12,fontFamily:F}}>Loading...</div>
           ) : (
@@ -109,7 +109,7 @@ export default function VLanguage() {
           )}
         </Card>
 
-        <Card title="Lead time by language (days)" source="Elation API — live">
+        <Card title="Lead time by language (days)">
           {loading ? (
             <div style={{height:220,display:"flex",alignItems:"center",justifyContent:"center",color:B.t3,fontSize:12,fontFamily:F}}>Loading...</div>
           ) : (
@@ -123,7 +123,7 @@ export default function VLanguage() {
         </Card>
       </Two>
 
-      <Card title="Access equity by language" source="Elation API — live">
+      <Card title="Access equity by language">
         {loading ? (
           <div style={{padding:"20px",color:B.t3,fontSize:12,fontFamily:F}}>Loading...</div>
         ) : (

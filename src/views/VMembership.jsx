@@ -15,7 +15,7 @@ import Tbl from "../components/atoms/Tbl.jsx";
 export default function VMembership() {
   return (
     <div>
-      <SecHeader tag="Module 5 · Priority · Hint API" title="Membership & Retention" desc="Predict revenue stability and identify churn risk early." />
+      <SecHeader tag="Module 5 · Priority" title="Membership & Retention" desc="Predict revenue stability and identify churn risk early." />
       <Grid cols={3}>
         <KpiCard label="Active members"          value="312"  trend="↑ +21 this week"         accent={B.ch.g} />
         <KpiCard label="New members (MTD)"       value="38"   trend="↑ +26% vs last month"    accent={B.ch.t} />
@@ -25,11 +25,11 @@ export default function VMembership() {
         <KpiCard label="Annualized churn"        value="24"   unit="%" subunit="Target: below 28%" accent={B.ch.t} />
       </Grid>
       <Two>
-        <Card title="Net member growth — 6 months" source="Hint API">
+        <Card title="Net member growth — 6 months">
           <Lgnd items={[{label:"New members",color:B.ch.g},{label:"Cancellations",color:B.ch.r}]} />
           <div style={{ height:200 }}><Bar data={D.mGrow} options={coS()} /></div>
         </Card>
-        <Card title="Retention cohort" source="Hint API">
+        <Card title="Retention cohort">
           <div style={{ paddingTop:8 }}>
             <Bar2 label="Retained at 1 month"   value={96} color={B.g700} />
             <Bar2 label="Retained at 3 months"  value={88} color={B.g600} />
@@ -38,7 +38,7 @@ export default function VMembership() {
           </div>
         </Card>
       </Two>
-      <Card title="Members by plan type" source="Hint API">
+      <Card title="Members by plan type">
         <Tbl headers={["Plan","Active","New (MTD)","Cancelled (MTD)","Churn","Status"]} rows={[["Standard Member","198","22","4","2.0%",<Pill type="success">Healthy</Pill>],["Concierge Plan","86","12","2","2.3%",<Pill type="success">Healthy</Pill>],["Employer / Partner","28","4","1","3.6%",<Pill type="warning">Monitor</Pill>]]} />
       </Card>
     </div>
