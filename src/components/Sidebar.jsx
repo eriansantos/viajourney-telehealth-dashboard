@@ -28,8 +28,8 @@ const NAV = [
       { id:"experience", label:"Patient Experience", priority:true,             component:VExperience },
     ]},
     { id:"members-g", label:"Members & Revenue", leaf:false, subs:[
-      { id:"membership", label:"Membership",  priority:true,  component:VMembership },
-      { id:"revenue",    label:"Revenue",     priority:false, component:VRevenue },
+      { id:"membership", label:"Membership",  priority:true,  live:true, component:VMembership },
+      { id:"revenue",    label:"Revenue",     priority:false, live:true, component:VRevenue },
     ]},
     { id:"ops-g",     label:"Operations",   leaf:false, subs:[
       { id:"operations", label:"Support Load",      priority:true,  live:true, component:VOperations },
