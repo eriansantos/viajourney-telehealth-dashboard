@@ -47,13 +47,22 @@ export default function ViaJourneyDashboard() {
       <div style={{ flex:1, display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden", minWidth:0 }}>
 
         {/* Topbar */}
-        <header style={{ height:48, background:B.white, borderBottom:`1px solid ${B.border}`, display:"flex", alignItems:"center", padding:"0 24px", justifyContent:"space-between", flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontSize:14, fontWeight:600, color:B.t1, fontFamily:F, letterSpacing:"-0.01em" }}>{leaf.label}</span>
+        <header style={{ height:48, background:B.white, borderBottom:`3px solid ${B.primary}`, display:"flex", alignItems:"center", padding:"0 24px", justifyContent:"space-between", flexShrink:0 }}>
+
+          {/* Breadcrumb */}
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:10, fontWeight:600, color:B.t4, letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:F }}>{leaf.section}</span>
+            <span style={{ fontSize:11, color:B.t4 }}>›</span>
+            <span style={{ fontSize:13, fontWeight:600, color:B.t1, fontFamily:F, letterSpacing:"-0.01em" }}>{leaf.label}</span>
+          </div>
+
+          {/* Right: clock + Live */}
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <span style={{ fontSize:11, color:B.t3, fontFamily:F }}>{clock}</span>
+            <div style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", border:`1px solid ${B.border}`, borderRadius:8, background:B.bg }}>
+              <div style={{ width:6, height:6, borderRadius:"50%", background:"#22C55E" }} />
+              <span style={{ fontSize:11, fontWeight:500, color:B.t2, fontFamily:F }}>Live</span>
             </div>
-          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 10px", border:`1px solid ${B.border}`, borderRadius:8, background:B.bg }}>
-            <div style={{ width:6, height:6, borderRadius:"50%", background:"#22C55E" }} />
-            <span style={{ fontSize:11, fontWeight:500, color:B.t2, fontFamily:F }}>Live</span>
           </div>
         </header>
 

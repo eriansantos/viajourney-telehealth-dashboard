@@ -48,7 +48,10 @@ const NAV = [
 
 function allLeaves(nav) {
   const out=[];
-  nav.forEach(g=>g.items.forEach(item=>{ if(item.leaf) out.push(item); else item.subs.forEach(s=>out.push(s)); }));
+  nav.forEach(g=>g.items.forEach(item=>{
+    if(item.leaf) out.push({...item, section:g.group});
+    else item.subs.forEach(s=>out.push({...s, section:g.group}));
+  }));
   return out;
 }
 export const LEAVES = allLeaves(NAV);
@@ -110,7 +113,7 @@ export default function Sidebar({ active, onSelect, clock }) {
         <img
           src="/logo-h.png"
           alt="ViaJourney Telehealth"
-          style={{ height:30, width:"auto", display:"block", objectFit:"contain" }}
+          style={{ height:34, width:"auto", display:"block", objectFit:"contain" }}
         />
         <div style={{ fontSize:9, fontWeight:600, color:B.t4, fontFamily:F, letterSpacing:"0.08em", textTransform:"uppercase", marginTop:5 }}>
           Clinical Dashboard
