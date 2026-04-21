@@ -1,46 +1,54 @@
-// ─── ViaJourney Brand Palette ────────────────────────────────────────────────
-// Colors extracted from official identity files (4.3.1 Identidade Visual)
-// #003D31 — deep forest green  (logo main body, exact pixel extraction)
-// #009A58 — emerald green      (logo accent leaf, brand primary)
-// #91C563 — sage/lime green    (logo light variant accent)
+// ─── ViaJourney Brand — MIV oficial (ViaJourney - Marca.pdf) ─────────────────
+// Sincronizado com o Manual de Identidade Visual e viajourney-checkout/src/lib/brand.js
+//
+// Paleta oficial:
+//   Dark Spring Green  #003d31 — confiança, estabilidade
+//   Shamrock Green     #009a58 — cor primária, vibrante
+//   Chartreuse Green   #91c563 — leveza, acolhimento
+//   White              #ffffff — clareza e transparência
 
 export const B = {
-  // ── Green scale ──────────────────────────────────────────────────────────────
-  g900: "#001F18",   // near-black forest green
-  g800: "#003D31",   // deep forest green  ← EXACT LOGO COLOR
-  g700: "#005A47",   // dark teal-green
-  g600: "#007B58",   // medium-dark green
-  g500: "#009A58",   // emerald green      ← EXACT BRAND PRIMARY
-  g400: "#2EB872",   // medium bright green
-  g300: "#91C563",   // sage/lime accent   ← EXACT LOGO ACCENT
-  g200: "#BCDC9A",   // light sage
-  g100: "#DFF0C5",   // very light green
-  g50:  "#F0F8E8",   // barely-there green tint
+  // ── Paleta oficial MIV ────────────────────────────────────────────────────
+  dark:    "#003d31",   // Dark Spring Green
+  primary: "#009a58",   // Shamrock Green
+  lime:    "#91c563",   // Chartreuse Green
+  white:   "#ffffff",
 
-  // ── Neutrals ──────────────────────────────────────────────────────────────────
-  white:   "#FFFFFF",
-  bg:      "#F5F7F4",   // subtle warm-green tinted page background
-  sbg:     "#FFFFFF",   // sidebar / card white
-  border:  "#E2EAE4",   // green-tinted border
-  borderM: "#C0D0C8",   // medium border
+  // ── Escala verde (alinhada ao MIV) ───────────────────────────────────────
+  g900: "#003d31",   // Dark Spring Green
+  g800: "#003d31",   // Dark Spring Green
+  g700: "#009a58",   // Shamrock Green (primária)
+  g600: "#00b866",   // Verde intermediário
+  g500: "#009a58",   // Shamrock Green
+  g400: "#91c563",   // Chartreuse Green
+  g300: "#b5d98a",   // Chartreuse claro
+  g200: "#d6edbb",   // Verde muito claro
+  g100: "#eef7e0",   // Tint esverdeado
+  g50:  "#f5fbee",   // Tint mínimo
 
-  // ── Text ─────────────────────────────────────────────────────────────────────
-  t1: "#0C1E17",   // near-black (deep forest tint)
-  t2: "#2D4A3A",   // dark green text
-  t3: "#6B8A78",   // muted green
-  t4: "#A8C0B0",   // light muted green
+  // ── Neutros ───────────────────────────────────────────────────────────────
+  bg:      "#f5f7f5",   // fundo da página
+  sbg:     "#fcfcfc",   // sidebar / cards
+  border:  "#e0e8e0",   // bordas padrão
+  borderM: "#c8d8c8",   // bordas médias
 
-  // ── Semantic ──────────────────────────────────────────────────────────────────
-  pos:    "#009A58", posBg:  "#E5F7EE",
-  warn:   "#92560A", warnBg: "#FEF3C7",
-  neg:    "#B91C1C", negBg:  "#FEF2F2",
-  info:   "#1447A0", infoBg: "#EBF3FF",
+  // ── Texto ──────────────────────────────────────────────────────────────────
+  t1: "#1a2e1a",   // texto principal
+  t2: "#003d31",   // texto secundário — Dark Spring Green
+  t3: "#5a6b5a",   // texto terciário
+  t4: "#8a9e8a",   // texto leve / placeholder
 
-  // ── Chart palette ─────────────────────────────────────────────────────────────
+  // ── Semânticas ─────────────────────────────────────────────────────────────
+  pos:    "#009a58", posBg:  "#eef7e0",
+  warn:   "#b45309", warnBg: "#fffbeb",
+  neg:    "#ec1c1c", negBg:  "#fef2f2",
+  info:   "#1e88e5", infoBg: "#e3f2fd",
+
+  // ── Paleta de gráficos ─────────────────────────────────────────────────────
   ch: {
-    g:  "#009A58",   // verde primário brand
-    g2: "#2EB872",   // verde médio
-    g3: "#91C563",   // verde sage/acento
+    g:  "#009a58",   // verde primário brand
+    g2: "#00b866",   // verde médio
+    g3: "#91c563",   // chartreuse
     t:  "#0B8A7A",   // teal complementar
     t2: "#2DD4BF",   // teal médio
     a:  "#D97706",   // âmbar (atenção)
@@ -49,5 +57,9 @@ export const B = {
   },
 };
 
-// Poppins matches the humanist rounded style of the ViaJourney logotype
-export const F = "'Poppins', 'Inter', system-ui, sans-serif";
+// ── Tipografia — Poppins (fonte oficial MIV) ──────────────────────────────────
+export const F  = "'Poppins', 'Roboto', 'Inter', sans-serif";
+export const F2 = "'Roboto', 'Inter', sans-serif";
+
+// ── Logo oficial ──────────────────────────────────────────────────────────────
+export const LOGO_URL = "https://cdn.landingpage.app.br/lp.viajourneytelehealth.com/1774648400/imagens/desktop/443515-89645b51570420406bca3e99eae41d73.png";
