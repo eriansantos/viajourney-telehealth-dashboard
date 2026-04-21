@@ -100,16 +100,18 @@ export default function VOverview() {
     if (isInitial) setLoading(true);
     setError(null);
     try {
-      const [visitVolume, speedToCare, languageEquity, clinicianPerf, compliance] =
+      const [visitVolume, speedToCare, languageEquity, clinicianPerf, compliance, membership, revenue] =
         await Promise.all([
           apiGet("/api/elation/visit-volume",         getToken),
           apiGet("/api/elation/speed-to-care",        getToken),
           apiGet("/api/elation/language-equity",       getToken),
           apiGet("/api/elation/clinician-performance", getToken),
           apiGet("/api/elation/compliance",            getToken),
+          apiGet("/api/hint/membership",               getToken).catch(() => ({ configured:false })),
+          apiGet("/api/hint/revenue",                  getToken).catch(() => ({ configured:false })),
         ]);
       if (!cancelledRef.current) {
-        setData({ visitVolume, speedToCare, languageEquity, clinicianPerf, compliance });
+        setData({ visitVolume, speedToCare, languageEquity, clinicianPerf, compliance, membership, revenue });
         setLoading(false);
       }
     } catch (e) {
@@ -132,6 +134,8 @@ export default function VOverview() {
   const le = data?.languageEquity;
   const cp = data?.clinicianPerf;
   const cm = data?.compliance;
+  const hm = data?.membership?.configured ? data.membership : null;
+  const hr = data?.revenue?.configured    ? data.revenue    : null;
 
   const totalAppts  = vv?.total ?? "—";
   const inPerson    = vv?.byMode?.IN_PERSON ?? 0;
@@ -182,11 +186,13 @@ export default function VOverview() {
 
   // ── Hero ─────────────────────────────────────────────────────────────────
   const L = loading ? "…" : undefined;
+  const activeMembersHero = hm ? hm.kpis.activeMembers : "—";
+  const revenueMTDHero    = hr ? `$${(hr.kpis.revenueMTD / 1000).toFixed(1)}` : "—";
   const heroKpis = [
-    { label:"Total appointments", value: L ?? totalAppts,  unit: undefined    },
-    { label:"Same-day rate",      value: L ?? sameDayRate, unit: L ? "" : "%" },
-    { label:"Active members",     value: "—",              unit: undefined    },
-    { label:"Satisfaction",       value: "—",              unit: "/5"         },
+    { label:"Total appointments", value: L ?? totalAppts,        unit: undefined     },
+    { label:"Same-day rate",      value: L ?? sameDayRate,       unit: L ? "" : "%"  },
+    { label:"Active members",     value: L ?? activeMembersHero, unit: undefined     },
+    { label:"Revenue (MTD)",      value: L ?? revenueMTDHero,    unit: L ? "" : "k"  },
   ];
 
   return (
@@ -297,6 +303,47 @@ export default function VOverview() {
         </Card>
       </Two>
 
+      {/* ── Business Health (Hint) ────────────────────────────────────────── */}
+      <SectionLabel>Business Health</SectionLabel>
+      <Grid cols={2} mb={12}>
+
+        <Card title="Membership">
+          {loading ? spinner(180) : hm ? <>
+            <KPI value={hm.kpis.activeMembers} label="active members" color={B.ch.g} />
+            <Metric label="New members (MTD)"  value={hm.kpis.newMTD} />
+            <Metric label="Cancellations (MTD)" value={hm.kpis.cancelledMTD} />
+            <Metric label="Monthly churn"      value={hm.kpis.monthlyChurnPct} unit="%" />
+            <Metric label="Avg tenure"         value={hm.kpis.avgDurationMonths} unit="mo" />
+          </> : <>
+            <KPI value="—" label="active members" dim />
+            <Metric label="New members (MTD)"    value="—" />
+            <Metric label="Monthly churn"        value="—" unit="%" />
+            <Metric label="Avg tenure"           value="—" unit="mo" />
+          </>}
+        </Card>
+
+        <Card title="Revenue">
+          {loading ? spinner(180) : hr ? <>
+            <KPI
+              value={`$${(hr.kpis.revenueMTD / 1000).toFixed(1)}`}
+              unit="k"
+              label="revenue MTD"
+              color={B.ch.g}
+            />
+            <Metric label="Revenue per member"  value={`$${hr.kpis.revenuePerPatient}`} />
+            <Metric label="Revenue per clinician" value={`$${(hr.kpis.revenuePerClinician / 1000).toFixed(1)}k`} />
+            <Metric label="Failed payment rate" value={hr.kpis.failedRate}     unit="%" />
+            <Metric label="Refund rate"         value={hr.kpis.refundRate}     unit="%" />
+          </> : <>
+            <KPI value="—" label="revenue MTD" dim />
+            <Metric label="Revenue per member"  value="—" />
+            <Metric label="Failed payment rate" value="—" unit="%" />
+            <Metric label="Refund rate"         value="—" unit="%" />
+          </>}
+        </Card>
+
+      </Grid>
+
       {/* ── Pending ───────────────────────────────────────────────────────── */}
       <SectionLabel>Coming Soon</SectionLabel>
       <Grid cols={3} mb={0}>
@@ -313,20 +360,6 @@ export default function VOverview() {
           <Metric label="Would recommend"   value="—" unit="%" />
           <Metric label="Complaints / 100"  value="—" />
           <Metric label="Repeat usage rate" value="—" unit="%" />
-        </Card>
-
-        <Card title="Membership">
-          <KPI value="—" label="active members" dim />
-          <Metric label="New members (MTD)"    value="—" />
-          <Metric label="Monthly churn"        value="—" unit="%" />
-          <Metric label="Avg tenure"           value="—" unit="mo" />
-        </Card>
-
-        <Card title="Revenue">
-          <KPI value="—" label="revenue MTD" dim />
-          <Metric label="Revenue per patient" value="—" />
-          <Metric label="Failed payment rate" value="—" unit="%" />
-          <Metric label="Refund rate"         value="—" unit="%" />
         </Card>
 
         <Card title="Operations & Support">
